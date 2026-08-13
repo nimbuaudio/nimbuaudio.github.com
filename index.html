@@ -6,12 +6,12 @@
   <title>Nimbu - Audio Decentralized Feed</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- SDK Oficial de Hive para evitar bloqueos CORS en navegadores -->
+  <script src="https://unpkg.com/@hiveio/dhive@latest/dist/dhive.js"></script>
   <style>
-    /* Efecto de brillo de fondo suave */
     .glow-bg {
       background: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, rgba(15, 23, 42, 0) 70%);
     }
-    /* Animación sutil para las tarjetas al pasar el cursor */
     .card-hover {
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -23,11 +23,9 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-indigo-500 selection:text-white relative overflow-x-hidden glow-bg">
 
-  <!-- Header Estilizado -->
+  <!-- Header -->
   <header class="border-b border-slate-800/80 bg-slate-950/70 sticky top-0 z-40 backdrop-blur-md">
     <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-      
-      <!-- Logotipo Nimbu -->
       <div class="flex items-center gap-2">
         <div class="bg-indigo-600/20 p-2 rounded-xl border border-indigo-500/30 text-indigo-400 shadow-lg shadow-indigo-500/10">
           <i data-lucide="cloud-lightning" class="w-5 h-5"></i>
@@ -35,27 +33,23 @@
         <div>
           <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-400 via-purple-300 to-rose-400 bg-clip-text text-transparent">Nimbu</h1>
           <div class="flex items-center gap-1.5 text-[10px] text-slate-400">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span id="statusNode" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <span>Hive Audio Feed</span>
           </div>
         </div>
       </div>
 
-      <!-- Área de Login -->
       <div id="authContainer">
         <button id="loginBtn" onclick="connectHiveKeychain()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/25 transition-all flex items-center gap-1.5 active:scale-95">
           <i data-lucide="wallet" class="w-3.5 h-3.5"></i>
           Conectar Hive
         </button>
       </div>
-
     </div>
   </header>
 
   <!-- Main Content -->
   <main class="max-w-6xl mx-auto px-3 py-6">
-    
-    <!-- Banner / Encabezado de la Sección -->
     <div class="mb-6 flex justify-between items-end border-b border-slate-800/60 pb-3">
       <div>
         <h2 class="text-sm font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
@@ -69,7 +63,7 @@
       </button>
     </div>
 
-    <!-- Rejilla para el Feed -->
+    <!-- Feed Container -->
     <div id="feed" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <div class="col-span-full text-center py-16 text-slate-500 flex flex-col items-center gap-3">
           <i data-lucide="loader-2" class="w-7 h-7 animate-spin text-indigo-500"></i>
@@ -78,17 +72,14 @@
     </div>
   </main>
 
-  <!-- Botón Flotante para Publicar con Efecto Glow -->
+  <!-- Botón Flotante para Publicar -->
   <button id="fabPublish" onclick="toggleModal(true)" class="hidden fixed bottom-6 right-6 bg-gradient-to-r from-indigo-600 to-rose-600 p-4 rounded-2xl shadow-xl shadow-indigo-500/20 z-40 hover:scale-105 transition-all active:scale-95 border border-white/10">
     <i data-lucide="plus" class="w-6 h-6 text-white"></i>
   </button>
 
-  <!-- Modal de Publicación Estilizado -->
+  <!-- Modal de Publicación -->
   <div id="publishModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl relative overflow-hidden">
-      
-      <div class="absolute -top-10 -right-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl"></div>
-
       <div class="flex justify-between items-center mb-5">
         <h2 class="text-lg font-bold flex items-center gap-2">
           <i data-lucide="music-2" class="w-5 h-5 text-indigo-400"></i>
@@ -102,22 +93,19 @@
       <div class="space-y-3">
         <div>
           <label class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1 block">Título</label>
-          <input id="postTitle" type="text" class="w-full bg-slate-950/80 rounded-xl px-3.5 py-2.5 text-sm border border-slate-800 outline-none focus:border-indigo-500 transition" placeholder="Nombre de la pista o episodio">
+          <input id="postTitle" type="text" class="w-full bg-slate-950/80 rounded-xl px-3.5 py-2.5 text-sm border border-slate-800 outline-none focus:border-indigo-500 transition" placeholder="Nombre del audio">
         </div>
-        
         <div>
           <label class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1 block">URL Audio / Enlace</label>
-          <input id="postUrl" type="url" class="w-full bg-slate-950/80 rounded-xl px-3.5 py-2.5 text-sm border border-slate-800 outline-none focus:border-indigo-500 transition" placeholder="https://3speak.tv/... o archivo .mp3">
+          <input id="postUrl" type="url" class="w-full bg-slate-950/80 rounded-xl px-3.5 py-2.5 text-sm border border-slate-800 outline-none focus:border-indigo-500 transition" placeholder="URL MP3 o link">
         </div>
-
         <div>
           <label class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1 block">Imagen de portada (Opcional)</label>
           <input id="postImage" type="url" class="w-full bg-slate-950/80 rounded-xl px-3.5 py-2.5 text-sm border border-slate-800 outline-none focus:border-indigo-500 transition" placeholder="https://...">
         </div>
-
         <div>
           <label class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1 block">Descripción</label>
-          <textarea id="postBody" class="w-full bg-slate-950/80 rounded-xl px-3.5 py-2.5 h-20 text-sm border border-slate-800 outline-none focus:border-indigo-500 transition resize-none" placeholder="Cuenta de qué trata este audio..."></textarea>
+          <textarea id="postBody" class="w-full bg-slate-950/80 rounded-xl px-3.5 py-2.5 h-20 text-sm border border-slate-800 outline-none focus:border-indigo-500 transition resize-none" placeholder="Detalles de la pista..."></textarea>
         </div>
       </div>
 
@@ -132,7 +120,14 @@
     lucide.createIcons();
     let currentUser = localStorage.getItem('nimbu_user');
 
-    // 1. Mostrar caché previo si existe
+    // Inicializar cliente DHive con redundancia automática de nodos
+    const hiveClient = new dhive.Client([
+        'https://api.hive.blog',
+        'https://api.deathwing.me',
+        'https://api.openhive.network',
+        'https://hive-api.arcange.eu'
+    ]);
+
     const cachedPosts = localStorage.getItem('nimbu_cache');
     if (cachedPosts) {
         try { renderPosts(JSON.parse(cachedPosts)); } catch(e) {}
@@ -145,55 +140,36 @@
 
     async function loadHivePosts() {
         const feedElement = document.getElementById('feed');
-        
-        const nodes = [
-            'https://api.hive.blog',
-            'https://api.openhive.network',
-            'https://api.deathwing.me',
-            'https://hive-api.arcange.eu'
-        ];
+        const statusNode = document.getElementById('statusNode');
 
-        let rawPosts = null;
+        try {
+            // Consulta directa utilizando la librería dHive
+            const rawPosts = await hiveClient.database.getDiscussions('created', { tag: 'music', limit: 30 });
 
-        for (const node of nodes) {
-            try {
-                const response = await fetch(node, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        jsonrpc: '2.0',
-                        method: 'condenser_api.get_discussions_by_created',
-                        params: [{ tag: 'music', limit: 30 }],
-                        id: 1
-                    })
+            if (rawPosts && rawPosts.length > 0) {
+                const audioPosts = rawPosts.filter(post => {
+                    const bodyMatches = AUDIO_FILTER_REGEX.test(post.body || '');
+                    const metaMatches = AUDIO_FILTER_REGEX.test(typeof post.json_metadata === 'string' ? post.json_metadata : JSON.stringify(post.json_metadata || {}));
+                    return bodyMatches || metaMatches;
                 });
 
-                const data = await response.json();
-                if (data && data.result && Array.isArray(data.result) && data.result.length > 0) {
-                    rawPosts = data.result;
-                    break;
-                }
-            } catch (e) {
-                console.warn(`Error en nodo ${node}`);
+                const displayPosts = audioPosts.length > 0 ? audioPosts : rawPosts.slice(0, 12);
+
+                localStorage.setItem('nimbu_cache', JSON.stringify(displayPosts));
+                renderPosts(displayPosts);
+                if (statusNode) statusNode.className = "w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse";
+            } else {
+                throw new Error("Respuesta vacía de Hive");
             }
-        }
 
-        if (rawPosts) {
-            const audioPosts = rawPosts.filter(post => {
-                const bodyMatches = AUDIO_FILTER_REGEX.test(post.body || '');
-                const metaMatches = AUDIO_FILTER_REGEX.test(typeof post.json_metadata === 'string' ? post.json_metadata : JSON.stringify(post.json_metadata || {}));
-                return bodyMatches || metaMatches;
-            });
+        } catch (error) {
+            console.error("Error al cargar publicaciones:", error);
+            if (statusNode) statusNode.className = "w-1.5 h-1.5 rounded-full bg-rose-500";
 
-            const displayPosts = audioPosts.length > 0 ? audioPosts : rawPosts.slice(0, 12);
-
-            localStorage.setItem('nimbu_cache', JSON.stringify(displayPosts));
-            renderPosts(displayPosts);
-        } else {
             if (!cachedPosts) {
                 feedElement.innerHTML = `
                   <div class="col-span-full text-center py-10 text-rose-400/80 text-xs bg-rose-950/20 border border-rose-900/30 rounded-2xl">
-                    <p class="font-semibold mb-2">Error al conectar con los nodos de Hive</p>
+                    <p class="font-semibold mb-2">Error de conexión con los nodos de Hive</p>
                     <button onclick="loadHivePosts()" class="bg-slate-900 text-indigo-400 px-3 py-1.5 rounded-xl border border-slate-800 hover:border-slate-700 transition text-[11px]">Reintentar conexión</button>
                   </div>
                 `;
