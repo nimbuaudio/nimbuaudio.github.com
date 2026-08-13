@@ -21,7 +21,6 @@
 
   <!-- Main Content -->
   <main class="max-w-6xl mx-auto px-2 py-4">
-    <!-- Rejilla para el Feed -->
     <div id="feed" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         <div class="col-span-full text-center py-10 text-slate-500">Cargando audios de Hive...</div>
     </div>
@@ -51,15 +50,15 @@
     lucide.createIcons();
     let currentUser = localStorage.getItem('audiohive_user');
 
-    // 1. Mostrar caché de inmediato si existe (Carga instantánea)
+    // 1. Mostrar caché si existe
     const cachedPosts = localStorage.getItem('audiohive_cache');
     if (cachedPosts) {
-        renderPosts(JSON.parse(cachedPosts));
+        try {
+            renderPosts(JSON.parse(cachedPosts));
+        } catch(e) {}
     }
 
     if (currentUser) setSession(currentUser);
-    
-    // 2. Consultar red en segundo plano
     loadHivePosts();
 
     const AUDIO_FILTER_REGEX = /(3speak\.tv|blocktunes\.net|liketu\.com|\.(mp3|wav|ogg|m4a|flac))/i;
@@ -67,50 +66,53 @@
     async function loadHivePosts() {
         const feedElement = document.getElementById('feed');
         
-        // Nodos públicos de Hive
         const nodes = [
-            'https://hive-api.arcange.eu',
-            'https://api.deathwing.me',
             'https://api.hive.blog',
-            'https://api.openhive.network'
+            'https://api.openhive.network',
+            'https://api.deathwing.me',
+            'https://hive-api.arcange.eu'
         ];
 
-        // Consulta individual
-        const fetchFromNode = async (node) => {
-            const response = await fetch(node, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    jsonrpc: '2.0',
-                    method: 'bridge.get_ranked_posts',
-                    params: { sort: 'created', tag: 'music', limit: 25 },
-                    id: 1
-                })
-            });
-            const data = await response.json();
-            if (!data.result || data.result.length === 0) throw new Error("Sin datos");
-            return data.result;
-        };
+        let rawPosts = null;
 
-        try {
-            // LANZAMIENTO EN PARALELO: Obtiene la respuesta del nodo más rápido primero
-            const rawPosts = await Promise.any(nodes.map(node => fetchFromNode(node)));
+        // Búsqueda secuencial ultrarrápida
+        for (const node of nodes) {
+            try {
+                const response = await fetch(node, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        method: 'condenser_api.get_discussions_by_created',
+                        params: [{ tag: 'music', limit: 30 }],
+                        id: 1
+                    })
+                });
 
-            // Filtrar únicamente los posts con contenido de audio
+                const data = await response.json();
+                if (data && data.result && Array.isArray(data.result) && data.result.length > 0) {
+                    rawPosts = data.result;
+                    break; // Si un nodo responde correctamente, salimos del bucle
+                }
+            } catch (e) {
+                console.warn(`Nodo ${node} no disponible, intentando siguiente...`);
+            }
+        }
+
+        if (rawPosts) {
+            // Filtrado de audios
             const audioPosts = rawPosts.filter(post => {
                 const bodyMatches = AUDIO_FILTER_REGEX.test(post.body || '');
-                const metaMatches = AUDIO_FILTER_REGEX.test(JSON.stringify(post.json_metadata || {}));
+                const metaMatches = AUDIO_FILTER_REGEX.test(typeof post.json_metadata === 'string' ? post.json_metadata : JSON.stringify(post.json_metadata || {}));
                 return bodyMatches || metaMatches;
             });
 
-            const finalPosts = audioPosts.length > 0 ? audioPosts : rawPosts.slice(0, 12);
+            // Mostrar filtrados o fallo seguro con las publicaciones recientes
+            const displayPosts = audioPosts.length > 0 ? audioPosts : rawPosts.slice(0, 12);
 
-            // Guardar en almacenamiento local para futuras cargas rápidas
-            localStorage.setItem('audiohive_cache', JSON.stringify(finalPosts));
-            renderPosts(finalPosts);
-
-        } catch (e) {
-            console.error("Error al obtener posts de la red Hive:", e);
+            localStorage.setItem('audiohive_cache', JSON.stringify(displayPosts));
+            renderPosts(displayPosts);
+        } else {
             if (!cachedPosts) {
                 feedElement.innerHTML = `
                   <div class="col-span-full text-center py-6 text-red-400 text-xs">
@@ -124,7 +126,8 @@
 
     function renderPosts(posts) {
         const feedElement = document.getElementById('feed');
-        
+        if (!posts || posts.length === 0) return;
+
         feedElement.innerHTML = posts.map(post => {
             let img = 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400';
             
@@ -133,7 +136,6 @@
                 if (meta && meta.image && meta.image[0]) img = meta.image[0];
             } catch(e) {}
 
-            // Detección de origen del post para la etiqueta
             let badge = "Audio";
             const fullContent = (post.body || '') + JSON.stringify(post.json_metadata || {});
             if (fullContent.includes("3speak.tv")) badge = "3Speak";
@@ -151,7 +153,7 @@
                   <h2 class="font-bold text-xs mb-2 leading-tight line-clamp-2">${post.title}</h2>
                 </div>
                 <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-1">
-                   <button onclick="voteAudio(this)" class="text-[10px] text-slate-400 hover:text-rose-500 flex items-center gap-1">❤️ ${post.stats ? post.stats.total_votes : (post.active_votes ? post.active_votes.length : 0)}</button>
+                   <button onclick="voteAudio(this)" class="text-[10px] text-slate-400 hover:text-rose-500 flex items-center gap-1">❤️ ${post.active_votes ? post.active_votes.length : 0}</button>
                    <a href="https://hive.blog/@${post.author}/${post.permlink}" target="_blank" class="text-[10px] text-indigo-400 hover:underline">Escuchar</a>
                 </div>
               </article>
@@ -159,7 +161,6 @@
         }).join('');
     }
 
-    // --- SESIÓN Y USUARIO ---
     function setSession(user) {
       currentUser = user;
       document.getElementById('authContainer').innerHTML = `
@@ -187,7 +188,6 @@
 
     function toggleModal(show) { document.getElementById('publishModal').classList.toggle('hidden', !show); }
 
-    // --- PUBLICACIÓN ---
     function publishContent() {
       if (!currentUser) return alert("Primero debes conectar tu usuario");
       
@@ -241,4 +241,3 @@
   </script>
 </body>
 </html>
-
