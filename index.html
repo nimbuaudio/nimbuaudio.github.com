@@ -3,93 +3,58 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nimbu - Comparte tu Voz</title>
+  <title>Nimbu - Experiencia Auditiva</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://unpkg.com/@hiveio/dhive@latest/dist/dhive.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;900&family=Lora:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
   
   <style>
-    body { font-family: 'Inter', sans-serif; padding-bottom: 120px; } /* Espacio extra para el player fijo */
-    h1, h2, h3 { font-family: 'Poppins', sans-serif; }
-    
+    body { font-family: 'Inter', sans-serif; padding-bottom: 140px; }
     .elven-bg { background: radial-gradient(circle at 50% 10%, #1c251a 0%, #0a0e09 100%); }
-    .border-elven { border: 1px solid rgba(184, 153, 90, 0.25); }
-    .gold-glow { text-shadow: 0 0 15px rgba(234, 179, 8, 0.2); }
-    .card-elven {
-        background: linear-gradient(135deg, rgba(30, 38, 28, 0.9) 0%, rgba(20, 25, 18, 0.95) 100%);
-        transition: transform 0.2s;
-    }
+    .card-elven { background: linear-gradient(135deg, rgba(30, 38, 28, 0.9) 0%, rgba(20, 25, 18, 0.95) 100%); transition: transform 0.2s; }
     .card-elven:hover { transform: translateY(-4px); }
-    
-    /* Estilo del Player */
-    input[type=range] { accent-color: #d97706; cursor: pointer; }
+    input[type=range] { accent-color: #d97706; }
   </style>
 </head>
-<body class="bg-[#0a0e09] text-[#e5dcc3] min-h-screen elven-bg selection:bg-amber-900/50">
+<body class="bg-[#0a0e09] text-[#e5dcc3] min-h-screen elven-bg">
 
   <!-- Header -->
   <header class="border-b border-amber-900/40 bg-[#0a0e09]/80 sticky top-0 z-40 backdrop-blur-md">
     <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
       <div class="flex items-center gap-3">
-        <button onclick="toggleSidebar(true)" class="p-2 rounded-xl border border-amber-800/40 hover:bg-amber-900/20 transition active:scale-95">
-          <i data-lucide="menu" class="w-5 h-5 text-amber-600"></i>
-        </button>
-        <div class="flex items-center gap-3">
-          <div class="bg-amber-900/20 p-2 rounded-lg border border-amber-700/30 text-amber-600">
-            <i data-lucide="leaf" class="w-5 h-5"></i>
-          </div>
-          <div class="leading-none">
-            <h1 class="text-xl font-black text-amber-500 gold-glow tracking-wide">Nimbu</h1>
-            <span class="text-[9px] font-serif text-amber-700/90 italic tracking-wider">Comparte tu Voz</span>
-          </div>
-        </div>
+        <h1 class="text-xl font-black text-amber-500 tracking-wide">Nimbu</h1>
       </div>
-      <div id="authContainer">
-        <button id="loginBtn" onclick="connectHiveKeychain()" class="border border-amber-700/50 text-amber-200 px-4 py-2 rounded-xl text-xs font-semibold hover:bg-amber-900/30 transition-all flex items-center gap-1.5">
-          <i data-lucide="shield" class="w-3.5 h-3.5"></i> Conectar
-        </button>
-      </div>
+      <div id="status" class="text-[10px] text-amber-700 italic">Depurador activo: Consola (F12)</div>
     </div>
   </header>
 
-  <!-- Sidebar (omitido por brevedad, igual al anterior) -->
-  <div id="sidebarBackdrop" onclick="toggleSidebar(false)" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50"></div>
-  <aside id="sidebar" class="fixed top-0 left-0 bottom-0 w-72 bg-[#0f140d] border-r border-amber-900/50 z-50 transform -translate-x-full transition-transform duration-300 p-6 flex flex-col justify-between overflow-y-auto">
-    <!-- ... (mismo contenido de navegación) ... -->
-    <div class="text-center text-stone-600 text-xs italic">El saber antiguo fluye eterno</div>
-  </aside>
-
-  <!-- Contenido -->
+  <!-- Feed -->
   <main class="max-w-6xl mx-auto px-4 py-8">
-    <div class="mb-8 border-b border-amber-900/30 pb-4">
-        <h2 class="text-2xl font-black text-amber-400 tracking-tight">Hoy Suena:</h2>
-    </div>
-    <div id="feed" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <div class="col-span-full py-20 text-center text-amber-800">
-            <i data-lucide="loader-2" class="w-8 h-8 animate-spin mx-auto mb-2"></i>
-            <p class="text-sm italic">Recibiendo los mensajes del viento...</p>
-        </div>
+    <h2 class="text-2xl font-black text-amber-400 mb-6">Audios Detectados:</h2>
+    <div id="feed" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <p class="text-amber-800">Cargando crónicas musicales...</p>
     </div>
   </main>
 
-  <!-- PLAYER FIJO INFERIOR -->
-  <footer class="fixed bottom-0 left-0 right-0 bg-[#0a0e09]/95 border-t border-amber-900/50 backdrop-blur-lg z-50 p-4">
-    <div class="max-w-4xl mx-auto flex items-center justify-between gap-6">
-        <div class="flex-1 min-w-0">
-            <h4 id="playerTitle" class="text-xs font-bold text-amber-500 truncate">Ningún audio seleccionado</h4>
-        </div>
+  <!-- Footer Player -->
+  <footer class="fixed bottom-0 left-0 right-0 bg-[#0a0e09]/95 border-t border-amber-900/50 p-4 backdrop-blur-md z-50">
+    <div class="max-w-4xl mx-auto flex flex-col gap-3">
+        <!-- Info -->
+        <h4 id="playerTitle" class="text-xs font-bold text-amber-500 truncate text-center">Selecciona un audio</h4>
         
-        <div class="flex items-center gap-4">
-            <button onclick="playRandom()" class="text-amber-700 hover:text-amber-400 transition"><i data-lucide="shuffle" class="w-5 h-5"></i></button>
-            <button onclick="changeTrack(-1)" class="text-amber-500 hover:text-amber-300"><i data-lucide="skip-back" class="w-5 h-5"></i></button>
-            <button id="playPauseBtn" onclick="togglePlay()" class="bg-amber-600 text-black p-3 rounded-full hover:bg-amber-500"><i data-lucide="play" class="w-6 h-6"></i></button>
-            <button onclick="changeTrack(1)" class="text-amber-500 hover:text-amber-300"><i data-lucide="skip-forward" class="w-5 h-5"></i></button>
-        </div>
-
-        <div class="flex items-center gap-2 w-32">
-            <i data-lucide="volume-2" class="w-4 h-4 text-amber-700"></i>
-            <input type="range" min="0" max="1" step="0.1" value="1" oninput="setVolume(this.value)" class="w-full">
+        <!-- Controles -->
+        <div class="flex items-center justify-between gap-6">
+            <div class="flex items-center gap-3">
+                <button onclick="playRandom()" class="text-amber-700 hover:text-amber-400"><i data-lucide="shuffle" class="w-5 h-5"></i></button>
+                <button onclick="changeTrack(-1)" class="text-amber-500 hover:text-amber-300"><i data-lucide="skip-back" class="w-5 h-5"></i></button>
+                <button id="playPauseBtn" onclick="togglePlay()" class="bg-amber-600 text-black p-3 rounded-full hover:bg-amber-500"><i data-lucide="play" class="w-6 h-6"></i></button>
+                <button onclick="changeTrack(1)" class="text-amber-500 hover:text-amber-300"><i data-lucide="skip-forward" class="w-5 h-5"></i></button>
+            </div>
+            <div class="flex items-center gap-2 w-32">
+                <i data-lucide="volume-2" class="w-4 h-4 text-amber-700"></i>
+                <input type="range" min="0" max="1" step="0.1" value="1" oninput="setVolume(this.value)" class="w-full">
+            </div>
         </div>
     </div>
     <audio id="globalAudio" onended="changeTrack(1)"></audio>
@@ -103,52 +68,75 @@
     const playerTitle = document.getElementById('playerTitle');
     const playPauseBtn = document.getElementById('playPauseBtn');
 
-    // Cargar posts
+    // 1. EL CAZADOR DE AUDIOS (Motor de búsqueda)
+    function findBestAudioUrl(post) {
+        console.log(`[DEBUG] Analizando post: ${post.title}`);
+        
+        // A. Intentar con metadatos (JSON)
+        let meta = {};
+        try {
+            meta = typeof post.json_metadata === 'string' ? JSON.parse(post.json_metadata || '{}') : post.json_metadata;
+        } catch(e) { console.warn("[DEBUG] Error parseando meta:", e); }
+
+        if (meta?.audio) { console.log("[DEBUG] Encontrado en metadata.audio"); return meta.audio; }
+        if (meta?.music) { console.log("[DEBUG] Encontrado en metadata.music"); return meta.music; }
+        if (Array.isArray(meta?.links)) {
+            const found = meta.links.find(l => /\.(mp3|wav|ogg|m4a|aac)$/i.test(l));
+            if (found) { console.log("[DEBUG] Encontrado en metadata.links"); return found; }
+        }
+
+        // B. Intentar con el cuerpo del texto (Regex)
+        const audioRegex = /(https?:\/\/[^\s"']+\.(mp3|wav|ogg|m4a|aac))/gi;
+        const match = post.body.match(audioRegex);
+        if (match) { console.log("[DEBUG] Encontrado en cuerpo del texto:", match[0]); return match[0]; }
+
+        console.log("[DEBUG] Ningún audio válido detectado.");
+        return null;
+    }
+
+    // 2. LÓGICA DE CARGA
     async function loadHivePosts() {
         try {
-            const hiveClient = new dhive.Client(['https://api.hive.blog'], { timeout: 4000 });
-            const posts = await hiveClient.database.getDiscussions('created', { tag: 'music', limit: 20 });
+            const hiveClient = new dhive.Client(['https://api.hive.blog'], { timeout: 5000 });
+            const posts = await hiveClient.database.getDiscussions('created', { tag: 'music', limit: 30 });
             
-            // Filtrar solo los que tienen audio
-            audioQueue = posts.filter(p => {
-                try {
-                    const m = typeof p.json_metadata === 'string' ? JSON.parse(p.json_metadata) : p.json_metadata;
-                    return !!m?.audio;
-                } catch(e) { return false; }
-            });
-            renderFeed(posts);
-        } catch (e) { console.error(e); }
+            audioQueue = posts.map(p => ({ ...p, audioUrl: findBestAudioUrl(p) }))
+                              .filter(p => !!p.audioUrl);
+
+            console.log(`[DEBUG] Total audios listos para reproducir: ${audioQueue.length}`);
+            renderFeed(audioQueue);
+        } catch (e) { console.error("[DEBUG] Error de red:", e); }
     }
 
     function renderFeed(posts) {
         const feed = document.getElementById('feed');
-        feed.innerHTML = posts.map((p, idx) => {
-            let img = 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400';
-            try { const m = typeof p.json_metadata === 'string' ? JSON.parse(p.json_metadata) : p.json_metadata; if(m?.image?.[0]) img = m.image[0]; } catch(e){}
-            
-            return `
-              <article class="card-elven border-elven rounded-xl p-3">
-                <img src="${img}" class="w-full h-24 object-cover rounded-lg mb-3">
-                <h3 class="text-[9px] text-amber-600 font-bold uppercase">${p.author}</h3>
-                <h2 class="text-xs text-[#e5dcc3] mb-3 leading-tight line-clamp-2">${p.title}</h2>
-                <button onclick="loadTrackFromFeed('${p.permlink}')" class="w-full py-2 text-xs font-bold border border-amber-900 rounded-lg hover:bg-amber-900/30 text-amber-500">
+        feed.innerHTML = posts.map(p => `
+            <article class="card-elven border border-amber-900/30 rounded-xl p-3">
+                <h3 class="text-[9px] text-amber-600 font-bold uppercase truncate">@${p.author}</h3>
+                <h2 class="text-xs text-[#e5dcc3] mb-3 leading-tight h-8 overflow-hidden">${p.title}</h2>
+                <button onclick="playTrackFromQueue('${p.permlink}')" class="w-full py-2 bg-amber-900/20 border border-amber-800 rounded-lg text-amber-500 font-bold text-xs hover:bg-amber-800">
                     REPRODUCIR
                 </button>
-              </article>`;
-        }).join('');
+            </article>
+        `).join('');
     }
 
-    function loadTrackFromFeed(permlink) {
+    // 3. CONTROL DEL REPRODUCTOR
+    function playTrackFromQueue(permlink) {
         const idx = audioQueue.findIndex(p => p.permlink === permlink);
         if(idx !== -1) { currentIdx = idx; playTrack(); }
     }
 
     function playTrack() {
         const post = audioQueue[currentIdx];
-        const m = typeof post.json_metadata === 'string' ? JSON.parse(post.json_metadata) : post.json_metadata;
-        player.src = m.audio;
+        console.log(`[DEBUG] Intentando cargar: ${post.audioUrl}`);
+        
+        player.src = post.audioUrl;
         playerTitle.innerText = post.title;
-        player.play();
+        player.play().catch(e => {
+            console.error("[DEBUG] El navegador bloqueó o falló la reproducción:", e);
+            alert("No se pudo reproducir este archivo. Verifica la consola (F12) para detalles de red.");
+        });
         playPauseBtn.innerHTML = '<i data-lucide="pause" class="w-6 h-6"></i>';
         lucide.createIcons();
     }
@@ -159,17 +147,21 @@
     }
 
     function changeTrack(step) {
+        if(audioQueue.length === 0) return;
         currentIdx = (currentIdx + step + audioQueue.length) % audioQueue.length;
         playTrack();
     }
 
     function playRandom() {
+        if(audioQueue.length === 0) return;
         currentIdx = Math.floor(Math.random() * audioQueue.length);
         playTrack();
     }
 
     function setVolume(val) { player.volume = val; }
 
+    // Inicializar
+    player.onerror = () => console.error("[DEBUG] El elemento <audio> reportó un error de carga.");
     loadHivePosts();
   </script>
 </body>
