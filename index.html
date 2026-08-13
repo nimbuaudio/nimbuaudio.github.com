@@ -3,348 +3,437 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nimbu Audio - Web3 Player</title>
+  <title>Nimbu - Audio Decentralized Feed</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    h1, h2, h3, .elven-font { font-family: 'Cinzel', serif; }
-    .gold-glow { text-shadow: 0 0 10px rgba(234, 179, 8, 0.4); }
-    .emerald-border { border-color: rgba(16, 185, 129, 0.2); }
+    .glow-bg {
+      background: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, rgba(15, 23, 42, 0) 70%);
+    }
+    .card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.2);
+    }
   </style>
 </head>
-<body class="bg-slate-950 text-emerald-100 min-h-screen flex flex-col md:flex-row pb-28">
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-indigo-500 selection:text-white relative overflow-x-hidden glow-bg">
 
-  <!-- MENÚ LATERAL DESPLEGABLE / DESK -->
-  <aside id="sidebar" class="w-full md:w-64 bg-slate-900/90 border-r border-emerald-900/40 p-5 flex flex-col justify-between shrink-0 backdrop-blur-md">
-    <div class="space-y-6">
+  <!-- Header -->
+  <header class="border-b border-slate-800/80 bg-slate-950/70 sticky top-0 z-40 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
       
-      <!-- LOGO -->
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-600 to-amber-400 flex items-center justify-center text-slate-950 font-bold shadow-lg shadow-emerald-950/50">
-            <i data-lucide="sparkles" class="w-5 h-5"></i>
+      <!-- Lado Izquierdo: Menú Hamburguesa + Isotipo Nimbu -->
+      <div class="flex items-center gap-3">
+        <button onclick="toggleSidebar(true)" class="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition active:scale-95">
+          <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+        
+        <div class="flex items-center gap-2">
+          <div class="bg-indigo-600/20 p-2 rounded-xl border border-indigo-500/30 text-indigo-400 shadow-lg shadow-indigo-500/10">
+            <i data-lucide="cloud-lightning" class="w-5 h-5"></i>
           </div>
           <div>
-            <h1 class="text-lg font-bold text-amber-300 elven-font gold-glow tracking-wider">NIMBU</h1>
-            <p class="text-[10px] text-emerald-500 uppercase tracking-widest elven-font">Audio Web3</p>
+            <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-400 via-purple-300 to-rose-400 bg-clip-text text-transparent">Nimbu</h1>
+            <div class="flex items-center gap-1.5 text-[10px] text-slate-400">
+              <span id="statusNode" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>Hive Audio Feed</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- KEYCHAIN AUTH HIVE -->
-      <div class="bg-emerald-950/40 border border-emerald-900/50 p-3 rounded-xl space-y-2">
-        <span class="text-[10px] font-bold text-amber-400 uppercase tracking-wider elven-font block">Autenticación Hive</span>
-        <input id="hiveUsername" type="text" placeholder="Usuario de Hive..." class="w-full bg-slate-950 border border-emerald-900/60 rounded px-2.5 py-1.5 text-xs text-emerald-100 focus:outline-none focus:border-amber-400">
-        <button onclick="loginKeychain()" class="w-full bg-gradient-to-r from-emerald-700 to-emerald-600 hover:from-emerald-600 hover:to-emerald-500 text-amber-200 text-xs py-1.5 rounded font-semibold transition elven-font flex items-center justify-center gap-1">
-          <i data-lucide="key" class="w-3.5 h-3.5"></i> Keychain Mobile
+      <!-- Lado Derecho: Conexión de Sesión -->
+      <div id="authContainer">
+        <button id="loginBtn" onclick="connectHiveKeychain()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/25 transition-all flex items-center gap-1.5 active:scale-95">
+          <i data-lucide="wallet" class="w-3.5 h-3.5"></i>
+          Conectar Hive
         </button>
-        <p id="authStatus" class="text-[9px] text-emerald-500 truncate text-center">No conectado</p>
       </div>
 
-      <!-- MENÚ DE OPCIONES DE CARGA -->
+    </div>
+  </header>
+
+  <!-- MENÚ LATERAL (DRAWER SIDEBAR) -->
+  <div id="sidebarBackdrop" onclick="toggleSidebar(false)" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 transition-opacity"></div>
+  
+  <aside id="sidebar" class="fixed top-0 left-0 bottom-0 w-72 bg-slate-900 border-r border-slate-800 z-50 transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col justify-between p-5">
+    
+    <div>
+      <!-- Header Menú Lateral -->
+      <div class="flex justify-between items-center mb-8 pb-4 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <div class="bg-indigo-600/20 p-1.5 rounded-lg border border-indigo-500/30 text-indigo-400">
+            <i data-lucide="cloud-lightning" class="w-4 h-4"></i>
+          </div>
+          <span class="font-bold text-base bg-gradient-to-r from-indigo-400 to-rose-400 bg-clip-text text-transparent">Menú Nimbu</span>
+        </div>
+        <button onclick="toggleSidebar(false)" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Opciones del Menú -->
       <nav class="space-y-1.5">
-        <p class="text-[10px] font-bold text-amber-500/70 uppercase tracking-widest px-2 elven-font mb-2">Explorar Fuentes</p>
-        
-        <button onclick="fetchHiveFeed('music', 'Comunidad de Música')" class="w-full text-left px-3 py-2 rounded-lg bg-emerald-950/30 hover:bg-emerald-900/40 border emerald-border text-xs font-semibold text-emerald-200 transition flex items-center gap-2">
-          <i data-lucide="music" class="w-4 h-4 text-amber-400"></i> Hive Music
+        <a href="#" onclick="toggleSidebar(false)" class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 font-semibold text-xs transition">
+          <i data-lucide="compass" class="w-4 h-4"></i>
+          Explorar Feed
+        </a>
+        <button onclick="openMenuSection('Perfil')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 text-xs font-medium transition text-left">
+          <i data-lucide="user" class="w-4 h-4"></i>
+          Mi Perfil
+        </button>
+        <button onclick="openMenuSection('Billetera')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 text-xs font-medium transition text-left">
+          <i data-lucide="wallet" class="w-4 h-4"></i>
+          Billetera Hive
+        </button>
+        <button onclick="openMenuSection('Mis Audios')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 text-xs font-medium transition text-left">
+          <i data-lucide="music-4" class="w-4 h-4"></i>
+          Mis Publicaciones
+        </button>
+        <button onclick="openMenuSection('Favoritos')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 text-xs font-medium transition text-left">
+          <i data-lucide="heart" class="w-4 h-4"></i>
+          Guardados / Listas
         </button>
 
-        <button onclick="fetchHiveFeed('3speak', 'Canal 3Speak')" class="w-full text-left px-3 py-2 rounded-lg bg-emerald-950/30 hover:bg-emerald-900/40 border emerald-border text-xs font-semibold text-emerald-200 transition flex items-center gap-2">
-          <i data-lucide="video" class="w-4 h-4 text-emerald-400"></i> 3Speak
+        <hr class="border-slate-800 my-4">
+
+        <button onclick="openMenuSection('Ayuda')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 text-xs font-medium transition text-left">
+          <i data-lucide="help-circle" class="w-4 h-4"></i>
+          Ayuda & Tutoriales
         </button>
-
-        <button onclick="fetchHiveFeed('podcast', 'Podcasts Web3')" class="w-full text-left px-3 py-2 rounded-lg bg-emerald-950/30 hover:bg-emerald-900/40 border emerald-border text-xs font-semibold text-emerald-200 transition flex items-center gap-2">
-          <i data-lucide="mic" class="w-4 h-4 text-amber-400"></i> Podcasts
-        </button>
-
-        <button onclick="fetchHiveFeed('soundlegion', 'SoundLegion')" class="w-full text-left px-3 py-2 rounded-lg bg-emerald-950/30 hover:bg-emerald-900/40 border emerald-border text-xs font-semibold text-emerald-200 transition flex items-center gap-2">
-          <i data-lucide="radio" class="w-4 h-4 text-emerald-400"></i> SoundLegion
-        </button>
-
-        <hr class="border-emerald-900/30 my-3">
-
-        <button onclick="importPinataFiles()" class="w-full text-left px-3 py-2 rounded-lg bg-amber-950/20 hover:bg-amber-900/30 border border-amber-900/30 text-xs font-semibold text-amber-300 transition flex items-center gap-2">
-          <i data-lucide="database" class="w-4 h-4 text-amber-400"></i> Importar Pinata
+        <button onclick="openMenuSection('Configuracion')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 text-xs font-medium transition text-left">
+          <i data-lucide="settings" class="w-4 h-4"></i>
+          Configuración
         </button>
       </nav>
     </div>
 
-    <div class="text-[10px] text-emerald-700 text-center pt-4 elven-font">
-      ✦ Nimbu Web3 Audio ✦
+    <!-- Footer Menú Lateral -->
+    <div class="border-t border-slate-800 pt-4 text-center">
+      <p class="text-[10px] text-slate-500">Nimbu v0.2.0 • Decentralized Audio</p>
     </div>
   </aside>
 
-  <!-- CONTENIDO EN DOS COLUMNAS -->
-  <main class="flex-1 p-6 max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
-    
-    <!-- COLUMNA PRINCIPAL (LISTA DE REPRODUCCIÓN) -->
-    <div class="lg:col-span-2 space-y-4">
-      <div class="flex justify-between items-end border-b border-emerald-900/30 pb-3">
-        <div>
-          <h2 id="currentCategory" class="text-xl font-bold text-amber-200 elven-font">Catálogo de Audios</h2>
-          <p id="statusMsg" class="text-xs text-emerald-500 elven-font">Selecciona una categoría del menú lateral...</p>
-        </div>
-        <button onclick="clearPlaylist()" class="text-xs text-amber-500/70 hover:text-amber-400 flex items-center gap-1 elven-font">
-          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Limpiar
-        </button>
+  <!-- Main Content -->
+  <main class="max-w-6xl mx-auto px-3 py-6">
+    <div class="mb-6 flex justify-between items-end border-b border-slate-800/60 pb-3">
+      <div>
+        <h2 class="text-sm font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
+          <i data-lucide="radio" class="w-4 h-4 text-indigo-400"></i>
+          Explorar Audios
+        </h2>
+        <p class="text-xs text-slate-500">3Speak, Blocktunes, Liketu y contenido multimedia en Hive</p>
       </div>
-
-      <div id="playlist" class="space-y-2.5">
-        <div class="text-center py-12 text-emerald-800">
-          <i data-lucide="disc" class="w-12 h-12 mx-auto mb-2 opacity-30"></i>
-          <p class="text-sm elven-font">Esperando selección de audio.</p>
-        </div>
-      </div>
+      <button onclick="loadHivePosts()" class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800 hover:border-slate-700 transition">
+        <i data-lucide="rotate-cw" class="w-3 h-3"></i> Actualizar
+      </button>
     </div>
 
-    <!-- COLUMNA SECUNDARIA (DETALLES Y METADATOS) -->
-    <div class="space-y-4">
-      <div class="bg-slate-900/60 border border-emerald-900/40 rounded-xl p-4 backdrop-blur-sm space-y-3">
-        <h3 class="text-sm font-bold text-amber-300 elven-font border-b border-emerald-900/30 pb-2 flex items-center gap-1.5">
-          <i data-lucide="info" class="w-4 h-4 text-emerald-400"></i> Información del Post
-        </h3>
-        
-        <div id="postDetails" class="space-y-2 text-xs text-emerald-200/80">
-          <p class="italic text-emerald-600">Selecciona un audio para ver sus metadatos y autor en Hive.</p>
+    <!-- Feed Container -->
+    <div id="feed" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div class="col-span-full text-center py-16 text-slate-500 flex flex-col items-center gap-3">
+          <i data-lucide="loader-2" class="w-7 h-7 animate-spin text-indigo-500"></i>
+          <span class="text-xs font-medium">Sincronizando con la red Nimbu...</span>
         </div>
-      </div>
     </div>
-
   </main>
 
-  <!-- REPRODUCTOR FIJO CON "HOY SUENA" Y TIPOGRAFÍA ÉLFICA -->
-  <footer class="fixed bottom-0 left-0 right-0 bg-slate-900/95 border-t border-emerald-900/40 p-4 backdrop-blur-lg z-50">
-    <div class="max-w-5xl mx-auto flex items-center justify-between">
-      <div class="w-1/2">
-        <div id="nowPlayingLabel" class="text-[10px] uppercase tracking-widest text-amber-400 font-bold elven-font gold-glow">Hoy suena:</div>
-        <div id="playerTitle" class="text-sm font-bold text-emerald-100 elven-font truncate">Sin pista seleccionada</div>
-        <div id="playerAuthor" class="text-[10px] text-emerald-500">---</div>
+  <!-- Botón Flotante para Publicar -->
+  <button id="fabPublish" onclick="toggleModal(true)" class="hidden fixed bottom-6 right-6 bg-gradient-to-r from-indigo-600 to-rose-600 p-4 rounded-2xl shadow-xl shadow-indigo-500/20 z-40 hover:scale-105 transition-all active:scale-95 border border-white/10">
+    <i data-lucide="plus" class="w-6 h-6 text-white"></i>
+  </button>
+
+  <!-- Modal de Publicación -->
+  <div id="publishModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+      <div class="flex justify-between items-center mb-5">
+        <h2 class="text-lg font-bold flex items-center gap-2">
+          <i data-lucide="music-2" class="w-5 h-5 text-indigo-400"></i>
+          Publicar en Nimbu
+        </h2>
+        <button onclick="toggleModal(false)" class="text-slate-500 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
       </div>
-      
-      <div class="flex items-center gap-4">
-        <button onclick="skip(-1)" class="p-2 hover:bg-emerald-950/50 text-emerald-400 rounded-full transition">
-          <i data-lucide="skip-back" class="w-5 h-5"></i>
-        </button>
-        <button id="mainPlayBtn" onclick="togglePlay()" class="p-3 bg-gradient-to-tr from-emerald-600 to-amber-500 text-slate-950 font-bold rounded-full shadow-lg shadow-emerald-950/40 hover:scale-105 transition">
-          <i data-lucide="play" class="w-5 h-5"></i>
-        </button>
-        <button onclick="skip(1)" class="p-2 hover:bg-emerald-950/50 text-emerald-400 rounded-full transition">
-          <i data-lucide="skip-forward" class="w-5 h-5"></i>
-        </button>
+
+      <div class="space-y-3">
+        <div>
+          <label class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1 block">Título</label>
+          <input id="postTitle" type="text" class="w-full bg-slate-950/80 rounded-xl px-3.5 py-2.5 text-sm border border-slate-800 outline-none focus:border-indigo-500 transition" placeholder="Nombre del audio">
+        </div>
+        <div>
+          <label class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1 block">URL Audio / Enlace</label>
+          <input id="postUrl" type="url" class="w-full bg-slate-950/80 rounded-xl px-3.5 py-2.5 text-sm border border-slate-800 outline-none focus:border-indigo-500 transition" placeholder="URL MP3 o link">
+        </div>
+        <div>
+          <label class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1 block">Imagen de portada (Opcional)</label>
+          <input id="postImage" type="url" class="w-full bg-slate-950/80 rounded-xl px-3.5 py-2.5 text-sm border border-slate-800 outline-none focus:border-indigo-500 transition" placeholder="https://...">
+        </div>
+        <div>
+          <label class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1 block">Descripción</label>
+          <textarea id="postBody" class="w-full bg-slate-950/80 rounded-xl px-3.5 py-2.5 h-20 text-sm border border-slate-800 outline-none focus:border-indigo-500 transition resize-none" placeholder="Detalles de la pista..."></textarea>
+        </div>
+      </div>
+
+      <div class="flex gap-3 mt-6">
+        <button onclick="toggleModal(false)" class="flex-1 py-2.5 text-slate-400 text-xs font-semibold hover:text-white transition">Cancelar</button>
+        <button onclick="publishContent()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/30 transition active:scale-95">Publicar en Hive</button>
       </div>
     </div>
-    <audio id="audioEngine" class="hidden"></audio>
-  </footer>
+  </div>
 
   <script>
-    let playlist = [];
-    let curIdx = 0;
-    const audio = document.getElementById('audioEngine');
-    const playBtn = document.getElementById('mainPlayBtn');
-    let hls = null;
-    let currentUser = null;
+    lucide.createIcons();
+    let currentUser = localStorage.getItem('nimbu_user');
 
-    // LOGIN CON HIVE KEYCHAIN (MOBILE Y EXTENSIÓN)
-    function loginKeychain() {
-      const username = document.getElementById('hiveUsername').value.trim();
-      if (!username) return alert('Por favor ingresa tu usuario de Hive');
+    // Intentar mostrar caché si existe
+    const cachedPosts = localStorage.getItem('nimbu_cache');
+    if (cachedPosts) {
+        try { renderPosts(JSON.parse(cachedPosts)); } catch(e) {}
+    }
+
+    if (currentUser) setSession(currentUser);
+    loadHivePosts();
+
+    const AUDIO_FILTER_REGEX = /(3speak\.tv|blocktunes\.net|liketu\.com|\.(mp3|wav|ogg|m4a|flac))/i;
+
+    // Control del Menú Lateral
+    function toggleSidebar(open) {
+        const sidebar = document.getElementById('sidebar');
+        const backdrop = document.getElementById('sidebarBackdrop');
+        if (open) {
+            sidebar.classList.remove('-translate-x-full');
+            backdrop.classList.remove('hidden');
+        } else {
+            sidebar.classList.add('-translate-x-full');
+            backdrop.classList.add('hidden');
+        }
+    }
+
+    function openMenuSection(sectionName) {
+        toggleSidebar(false);
+        if (!currentUser && (sectionName === 'Perfil' || sectionName === 'Billetera' || sectionName === 'Mis Audios')) {
+            alert("Debes conectar tu cuenta de Hive para acceder a " + sectionName);
+            return;
+        }
+        alert("Navegando a: " + sectionName + (currentUser ? ` (@${currentUser})` : ''));
+    }
+
+    async function loadHivePosts() {
+        const feedElement = document.getElementById('feed');
+        const statusNode = document.getElementById('statusNode');
+
+        // Lista multiversal de nodos RPC e APIs de respaldo garantizados sobre HTTPS
+        const endpoints = [
+            {
+                url: 'https://api.ecency.com/hive/posts',
+                type: 'ecency',
+                payload: { tag: 'music', filter: 'created', limit: 25 }
+            },
+            {
+                url: 'https://api.hive.blog',
+                type: 'rpc',
+                payload: { jsonrpc: '2.0', method: 'bridge.get_ranked_posts', params: { sort: 'created', tag: 'music', limit: 25 }, id: 1 }
+            },
+            {
+                url: 'https://api.deathwing.me',
+                type: 'rpc',
+                payload: { jsonrpc: '2.0', method: 'bridge.get_ranked_posts', params: { sort: 'created', tag: 'music', limit: 25 }, id: 1 }
+            },
+            {
+                url: 'https://hive-api.arcange.eu',
+                type: 'rpc',
+                payload: { jsonrpc: '2.0', method: 'bridge.get_ranked_posts', params: { sort: 'created', tag: 'music', limit: 25 }, id: 1 }
+            },
+            // Último recurso: Proxy seguro anti-CORS
+            {
+                url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://api.hive.blog'),
+                type: 'rpc',
+                payload: { jsonrpc: '2.0', method: 'bridge.get_ranked_posts', params: { sort: 'created', tag: 'music', limit: 25 }, id: 1 }
+            }
+        ];
+
+        let rawPosts = null;
+
+        for (const ep of endpoints) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 4000); // 4 seg timeout por nodo
+
+                const res = await fetch(ep.url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(ep.payload),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                if (!res.ok) continue;
+
+                const data = await res.json();
+                const items = data.result || data;
+
+                if (Array.isArray(items) && items.length > 0) {
+                    rawPosts = items;
+                    console.log("Conectado con éxito a:", ep.url);
+                    break; // Nodo funcionando encontrado, salir del bucle
+                }
+            } catch (err) {
+                console.warn("Fallo/Timeout en nodo:", ep.url);
+            }
+        }
+
+        if (rawPosts) {
+            const audioPosts = rawPosts.filter(post => {
+                const bodyMatches = AUDIO_FILTER_REGEX.test(post.body || '');
+                const metaMatches = AUDIO_FILTER_REGEX.test(typeof post.json_metadata === 'string' ? post.json_metadata : JSON.stringify(post.json_metadata || {}));
+                return bodyMatches || metaMatches;
+            });
+
+            const displayPosts = audioPosts.length > 0 ? audioPosts : rawPosts.slice(0, 12);
+
+            localStorage.setItem('nimbu_cache', JSON.stringify(displayPosts));
+            renderPosts(displayPosts);
+            if (statusNode) statusNode.className = "w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse";
+        } else {
+            if (statusNode) statusNode.className = "w-1.5 h-1.5 rounded-full bg-rose-500";
+            if (!cachedPosts) {
+                feedElement.innerHTML = `
+                  <div class="col-span-full text-center py-10 text-rose-400/80 text-xs bg-rose-950/20 border border-rose-900/30 rounded-2xl">
+                    <p class="font-semibold mb-2">Bloqueo de red en el navegador</p>
+                    <p class="text-[10px] text-slate-400 mb-4">Tu navegador móvil está bloqueando las llamadas RPC por CORS o DNS.</p>
+                    <button onclick="loadHivePosts()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg transition active:scale-95">Forzar Reconexión</button>
+                  </div>
+                `;
+            }
+        }
+    }
+
+    function renderPosts(posts) {
+        const feedElement = document.getElementById('feed');
+        if (!posts || posts.length === 0) return;
+
+        feedElement.innerHTML = posts.map(post => {
+            let img = 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400';
+            
+            try {
+                const meta = typeof post.json_metadata === 'string' ? JSON.parse(post.json_metadata) : post.json_metadata;
+                if (meta && meta.image && meta.image[0]) img = meta.image[0];
+            } catch(e) {}
+
+            let badge = "Audio";
+            let badgeBg = "bg-indigo-600/90";
+            const fullContent = (post.body || '') + JSON.stringify(post.json_metadata || {});
+            
+            if (fullContent.includes("3speak.tv")) { badge = "3Speak"; badgeBg = "bg-rose-600/90"; }
+            else if (fullContent.includes("blocktunes.net")) { badge = "Blocktunes"; badgeBg = "bg-amber-600/90"; }
+            else if (fullContent.includes("liketu.com")) { badge = "Liketu"; badgeBg = "bg-pink-600/90"; }
+
+            const votes = post.stats ? post.stats.total_votes : (post.active_votes ? post.active_votes.length : 0);
+
+            return `
+              <article class="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-2.5 card-hover flex flex-col justify-between relative backdrop-blur-sm">
+                <div>
+                  <div class="relative overflow-hidden rounded-xl mb-2.5">
+                    <img src="${img}" class="w-full h-28 object-cover bg-slate-950" onerror="this.src='https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400'">
+                    <span class="absolute top-1.5 right-1.5 ${badgeBg} text-white text-[9px] font-extrabold px-2 py-0.5 rounded-lg backdrop-blur-md shadow-md uppercase tracking-wider">${badge}</span>
+                  </div>
+                  <h3 class="font-bold text-[10px] text-indigo-400 uppercase tracking-wider truncate mb-0.5">@${post.author}</h3>
+                  <h2 class="font-semibold text-xs mb-3 leading-snug line-clamp-2 text-slate-200">${post.title}</h2>
+                </div>
+                <div class="flex justify-between items-center border-t border-slate-800/60 pt-2 mt-auto">
+                   <button onclick="voteAudio(this)" class="text-[11px] text-slate-400 hover:text-rose-500 flex items-center gap-1 transition">❤️ ${votes || 0}</button>
+                   <a href="https://hive.blog/@${post.author}/${post.permlink}" target="_blank" class="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 bg-indigo-950/40 px-2 py-1 rounded-lg border border-indigo-800/30">
+                     <span>Escuchar</span>
+                     <i data-lucide="external-link" class="w-3 h-3"></i>
+                   </a>
+                </div>
+              </article>
+            `;
+        }).join('');
+        lucide.createIcons();
+    }
+
+    function setSession(user) {
+      currentUser = user;
+      document.getElementById('authContainer').innerHTML = `
+        <div class="flex items-center gap-2 bg-slate-900 border border-slate-800/80 px-3 py-1.5 rounded-xl">
+            <span class="text-indigo-400 font-bold text-xs">@${user}</span>
+            <button onclick="logout()" class="text-[10px] text-slate-500 hover:text-slate-300 underline">Salir</button>
+        </div>
+      `;
+      document.getElementById('fabPublish').classList.remove('hidden');
+    }
+
+    function logout() {
+      localStorage.removeItem('nimbu_user');
+      window.location.reload();
+    }
+
+    async function connectHiveKeychain() {
+      const u = prompt('Introduce tu usuario de Hive (sin @):');
+      if (u) { 
+        const cleanUser = u.toLowerCase().trim();
+        localStorage.setItem('nimbu_user', cleanUser);
+        setSession(cleanUser);
+      }
+    }
+
+    function toggleModal(show) { document.getElementById('publishModal').classList.toggle('hidden', !show); }
+
+    function publishContent() {
+      if (!currentUser) return alert("Primero debes conectar tu usuario");
+      
+      const title = document.getElementById('postTitle').value;
+      const body = document.getElementById('postBody').value;
+      const audioUrl = document.getElementById('postUrl').value;
+      const imageUrl = document.getElementById('postImage').value;
+
+      if (!title || !audioUrl) return alert("El título y la URL del audio son obligatorios");
+
+      const slug = title.toLowerCase().replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
+      const permlink = `${slug}-${Date.now()}`;
+      const parentPermlink = "nimbu";
+      const postBody = `${imageUrl ? `![Imagen](${imageUrl})\n\n` : ''}🎧 **Escucha el audio aquí:** ${audioUrl}\n\n${body}`;
+      
+      const jsonMetadata = JSON.stringify({ 
+        tags: ["nimbu", "music", "audio"], 
+        app: "nimbu/0.1.0" 
+      });
 
       if (window.hive_keychain) {
-        window.hive_keychain.requestSignBuffer(username, "Nimbu Auth", "Posting", response => {
-          if (response.success) {
-            currentUser = username;
-            document.getElementById('authStatus').innerText = `✓ Conectado como @${username}`;
-            document.getElementById('authStatus').className = "text-[9px] text-amber-400 font-bold text-center";
-          } else {
-            document.getElementById('authStatus').innerText = "Error en firma";
+        window.hive_keychain.requestPost(currentUser, permlink, parentPermlink, title, postBody, "", jsonMetadata, (res) => {
+          if (res.success) { 
+            alert("¡Publicación enviada exitosamente!"); 
+            toggleModal(false); 
+            loadHivePosts();
+          } else { 
+            alert("Error al publicar: " + res.message); 
           }
         });
       } else {
-        alert("Hive Keychain no detectado. Abre esta página dentro de la App de Hive Keychain Mobile o instala la extensión.");
+        const op = ["comment", {
+            "parent_author": "",
+            "parent_permlink": parentPermlink,
+            "author": currentUser,
+            "permlink": permlink,
+            "title": title,
+            "body": postBody,
+            "json_metadata": jsonMetadata
+        }];
+        
+        const url = `hive://sign-tx?tx=${encodeURIComponent(JSON.stringify(op))}`;
+        window.location.href = url;
       }
     }
 
-    // CARGAR POSTS DESDE HIVE
-    async function fetchHiveFeed(tag, label) {
-      document.getElementById('currentCategory').innerText = label || `Etiqueta: #${tag}`;
-      document.getElementById('statusMsg').innerText = "Buscando publicaciones en Hive...";
-
-      try {
-        const response = await fetch('https://api.hive.blog', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jsonrpc: "2.0",
-            method: "condenser_api.get_discussions_by_created",
-            params: [{ tag: tag, limit: 30 }],
-            id: 1
-          })
-        });
-
-        const { result } = await response.json();
-        const extracted = [];
-
-        result.forEach(post => {
-          try {
-            const meta = JSON.parse(post.json_metadata || "{}");
-            let mediaUrl = null;
-
-            if (meta.video?.info?.ipfs) {
-              mediaUrl = `https://ipfs.io/ipfs/${meta.video.info.ipfs}`;
-            } else if (meta.video?.info?.file) {
-              const permlink = meta.video.info.file.replace('.m3u8', '');
-              mediaUrl = `https://encoder.3speak.tv/play?v=${post.author}/${permlink}`;
-            }
-
-            if (!mediaUrl) {
-              const audioMatch = post.body.match(/https?:\/\/[^\s"']+\.(mp3|wav|ogg|m3u8)/i);
-              if (audioMatch) mediaUrl = audioMatch[0];
-            }
-
-            if (mediaUrl) {
-              extracted.push({
-                title: post.title,
-                author: "@" + post.author,
-                permlink: post.permlink,
-                url: mediaUrl,
-                bodyPreview: post.body.substring(0, 150) + "...",
-                source: tag
-              });
-            }
-          } catch (e) {}
-        });
-
-        if (extracted.length > 0) {
-          playlist = extracted;
-          renderList();
-          document.getElementById('statusMsg').innerText = `Se encontraron ${extracted.length} audios.`;
-        } else {
-          document.getElementById('statusMsg').innerText = "No se encontraron audios recientes.";
-        }
-      } catch (e) {
-        document.getElementById('statusMsg').innerText = "Error de conexión con Hive.";
-      }
+    function voteAudio(btn) {
+      if (!currentUser) return alert("Conecta tu cuenta para interactuar");
+      btn.classList.toggle('text-rose-500');
     }
-
-    // IMPORTAR PINATA
-    async function importPinataFiles() {
-      const jwt = prompt("Ingresa tu Pinata JWT Token:");
-      if (!jwt) return;
-
-      document.getElementById('statusMsg').innerText = "Conectando con Pinata...";
-
-      try {
-        const response = await fetch("https://api.pinata.cloud/data/pinList?status=pinned&pageLimit=100", {
-          method: "GET",
-          headers: { "Authorization": `Bearer ${jwt.trim().replace('Bearer ', '')}` }
-        });
-
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = await response.json();
-
-        playlist = data.rows.map(item => ({
-          title: item.metadata?.name || item.ipfs_pin_hash,
-          author: "IPFS Directo",
-          permlink: "",
-          url: `https://gateway.pinata.cloud/ipfs/${item.ipfs_pin_hash}`,
-          bodyPreview: "Archivo alojado en Pinata Cloud IPFS.",
-          source: "Pinata"
-        }));
-
-        renderList();
-        document.getElementById('statusMsg').innerText = `Se importaron ${playlist.length} archivos.`;
-
-      } catch (e) {
-        alert("Error al conectar con Pinata.");
-      }
-    }
-
-    function renderList() {
-      const container = document.getElementById('playlist');
-      if (playlist.length === 0) {
-        container.innerHTML = `<div class="text-center py-12 text-emerald-800"><p class="text-sm elven-font">Lista vacía.</p></div>`;
-        return;
-      }
-
-      container.innerHTML = playlist.map((t, i) => `
-        <div class="p-3 bg-slate-900/60 rounded-xl border border-emerald-900/30 hover:border-amber-500/40 transition flex justify-between items-center group backdrop-blur-sm">
-          <div class="truncate mr-4">
-            <h3 class="text-sm font-bold text-emerald-100 truncate group-hover:text-amber-200 transition">${t.title}</h3>
-            <p class="text-[10px] text-emerald-500">${t.source} • <span class="text-amber-400/80">${t.author}</span></p>
-          </div>
-          <button onclick="playTrack(${i})" class="text-xs bg-emerald-950 hover:bg-emerald-800 text-amber-300 px-3 py-1.5 rounded-lg border border-emerald-800 transition shrink-0 flex items-center gap-1.5 font-semibold elven-font">
-            <i data-lucide="play" class="w-3 h-3"></i> Reproducir
-          </button>
-        </div>
-      `).join('');
-
-      lucide.createIcons();
-    }
-
-    async function playTrack(i) {
-      curIdx = i;
-      const track = playlist[i];
-      
-      document.getElementById('nowPlayingLabel').innerText = "Hoy suena:";
-      document.getElementById('playerTitle').innerText = track.title;
-      document.getElementById('playerAuthor').innerText = `${track.source} • ${track.author}`;
-
-      // Mostrar detalles en la columna derecha
-      document.getElementById('postDetails').innerHTML = `
-        <p class="font-bold text-amber-300">${track.title}</p>
-        <p class="text-emerald-400">Autor: ${track.author}</p>
-        <p class="text-slate-400 text-[11px] mt-2">${track.bodyPreview}</p>
-        ${track.permlink ? `<a href="https://peakd.com/@${track.author.replace('@','')}/${track.permlink}" target="_blank" class="inline-block mt-2 text-[10px] text-amber-400 hover:underline">Ver post original en PeakD ↗</a>` : ''}
-      `;
-
-      audio.onerror = () => {
-        document.getElementById('playerTitle').innerText = "Error al reproducir audio";
-        playBtn.innerHTML = '<i data-lucide="play" class="w-5 h-5"></i>';
-      };
-
-      if (Hls.isSupported() && track.url.includes('.m3u8')) {
-        if (hls) hls.destroy();
-        hls = new Hls();
-        hls.loadSource(track.url);
-        hls.attachMedia(audio);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => audio.play());
-      } else {
-        if (hls) hls.destroy();
-        audio.src = track.url;
-        await audio.play();
-      }
-
-      playBtn.innerHTML = '<i data-lucide="pause" class="w-5 h-5"></i>';
-      lucide.createIcons();
-    }
-
-    function togglePlay() {
-      if (audio.paused) { 
-        audio.play(); 
-        playBtn.innerHTML = '<i data-lucide="pause" class="w-5 h-5"></i>'; 
-      } else { 
-        audio.pause(); 
-        playBtn.innerHTML = '<i data-lucide="play" class="w-5 h-5"></i>'; 
-      }
-      lucide.createIcons();
-    }
-
-    function skip(s) {
-      if (playlist.length === 0) return;
-      let next = (curIdx + s + playlist.length) % playlist.length;
-      playTrack(next);
-    }
-
-    function clearPlaylist() {
-      playlist = [];
-      renderList();
-      document.getElementById('statusMsg').innerText = "Lista limpiada.";
-    }
-
-    lucide.createIcons();
   </script>
 </body>
 </html>
