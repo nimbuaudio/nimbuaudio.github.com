@@ -3,278 +3,292 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nimbu - Experiencia Auditiva</title>
+  <title>Nimbu Audio - Elven Web3 Player</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-  <script>eruda.init();</script>
-  
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Inter', sans-serif; padding-bottom: 140px; }
-    .elven-bg { background: radial-gradient(circle at 50% 10%, #1c251a 0%, #0a0e09 100%); }
-    .card-elven { background: linear-gradient(135deg, rgba(30, 38, 28, 0.9) 0%, rgba(20, 25, 18, 0.95) 100%); transition: transform 0.2s; }
-    .card-elven:hover { transform: translateY(-4px); }
-    input[type=range] { accent-color: #d97706; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    h1, h2, h3, .elven-font { font-family: 'Cinzel', serif; }
+    .gold-glow { text-shadow: 0 0 10px rgba(234, 179, 8, 0.3); }
+    .emerald-border { border-color: rgba(16, 185, 129, 0.2); }
   </style>
 </head>
-<body class="bg-[#0a0e09] text-[#e5dcc3] min-h-screen elven-bg">
+<body class="bg-slate-950 text-emerald-100/90 min-h-screen flex flex-col md:flex-row pb-28">
 
-  <!-- Header -->
-  <header class="border-b border-amber-900/40 bg-[#0a0e09]/80 sticky top-0 z-40 backdrop-blur-md">
-    <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+  <!-- BARRA LATERAL (Menú Elfico con muchas opciones) -->
+  <aside class="w-full md:w-64 bg-slate-900/80 border-r border-emerald-900/40 p-5 flex flex-col justify-between shrink-0 backdrop-blur-md">
+    <div class="space-y-6">
+      <!-- Logo Élfico -->
       <div class="flex items-center gap-3">
-        <button onclick="toggleSidebar(true)" class="p-2 rounded-lg border border-amber-800/40 hover:bg-amber-900/20 text-amber-600 transition">
-            <i data-lucide="menu" class="w-5 h-5"></i>
-        </button>
-        <h1 class="text-xl font-black text-amber-500 tracking-wide">Nimbu</h1>
+        <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-600 to-amber-400 flex items-center justify-center text-slate-950 font-bold shadow-lg shadow-emerald-900/50">
+          <i data-lucide="sparkles" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-amber-300 elven-font gold-glow tracking-wider">NIMBU</h1>
+          <p class="text-[10px] text-emerald-500 uppercase tracking-widest">Audio Místico Web3</p>
+        </div>
       </div>
-      <div id="nodeStatus" class="text-[10px] text-amber-800 italic">Conectando...</div>
-    </div>
-  </header>
 
-  <!-- Sidebar completo -->
-  <div id="sidebarBackdrop" onclick="toggleSidebar(false)" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50"></div>
-  <aside id="sidebar" class="fixed top-0 left-0 bottom-0 w-72 bg-[#0f140d] border-r border-amber-900/50 z-50 transform -translate-x-full transition-transform duration-300 p-6 flex flex-col justify-between overflow-y-auto">
-    <nav class="space-y-8">
-        <div class="flex items-center gap-3 pb-6 border-b border-amber-900/30">
-            <i data-lucide="leaf" class="text-amber-600"></i>
-            <span class="text-lg font-bold text-amber-500">Nimbu</span>
-        </div>
-        <div>
-            <p class="text-[10px] uppercase tracking-widest text-amber-800 mb-3 px-3">Exploración</p>
-            <div class="space-y-1">
-                <a href="#" onclick="loadHivePosts()" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-amber-900/10 text-amber-500 border border-amber-800/30 text-sm">
-                    <i data-lucide="compass" class="w-4 h-4"></i> Explorar Crónicas
-                </a>
-                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-stone-400 hover:text-amber-200 text-sm">
-                    <i data-lucide="trending-up" class="w-4 h-4"></i> Ritmos en Auge
-                </a>
-            </div>
-        </div>
-        <div>
-            <p class="text-[10px] uppercase tracking-widest text-amber-800 mb-3 px-3">Legado Personal</p>
-            <div class="space-y-1">
-                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-stone-400 hover:text-amber-200 text-sm">
-                    <i data-lucide="user" class="w-4 h-4"></i> Mi Perfil
-                </a>
-                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-stone-400 hover:text-amber-200 text-sm">
-                    <i data-lucide="gem" class="w-4 h-4"></i> Billetera Hive
-                </a>
-            </div>
-        </div>
-    </nav>
-    <div class="text-[10px] text-stone-600 text-center italic border-t border-amber-900/30 pt-6">"El saber antiguo fluye eterno"</div>
+      <!-- Menú de Opciones de Carga -->
+      <nav class="space-y-2">
+        <p class="text-[10px] font-bold text-amber-500/70 uppercase tracking-widest px-2">Explorar Fuentes</p>
+        
+        <button onclick="fetchHive('music', 'Comunidad de Música')" class="w-full text-left px-3 py-2.5 rounded-lg bg-emerald-950/30 hover:bg-emerald-900/40 border emerald-border text-xs font-semibold text-emerald-200 transition flex items-center gap-2">
+          <i data-lucide="music" class="w-4 h-4 text-amber-400"></i> Hive Music
+        </button>
+
+        <button onclick="fetchHive('3speak', 'Colección 3Speak')" class="w-full text-left px-3 py-2.5 rounded-lg bg-emerald-950/30 hover:bg-emerald-900/40 border emerald-border text-xs font-semibold text-emerald-200 transition flex items-center gap-2">
+          <i data-lucide="video" class="w-4 h-4 text-emerald-400"></i> 3Speak Feeds
+        </button>
+
+        <button onclick="fetchHive('podcast', 'Podcasts Web3')" class="w-full text-left px-3 py-2.5 rounded-lg bg-emerald-950/30 hover:bg-emerald-900/40 border emerald-border text-xs font-semibold text-emerald-200 transition flex items-center gap-2">
+          <i data-lucide="mic" class="w-4 h-4 text-amber-400"></i> Podcasts
+        </button>
+
+        <button onclick="fetchHive('soundlegion', 'SoundLegion')" class="w-full text-left px-3 py-2.5 rounded-lg bg-emerald-950/30 hover:bg-emerald-900/40 border emerald-border text-xs font-semibold text-emerald-200 transition flex items-center gap-2">
+          <i data-lucide="radio" class="w-4 h-4 text-emerald-400"></i> SoundLegion
+        </button>
+
+        <hr class="border-emerald-900/30 my-4">
+
+        <button onclick="importPinataFiles()" class="w-full text-left px-3 py-2.5 rounded-lg bg-amber-950/20 hover:bg-amber-900/30 border border-amber-900/30 text-xs font-semibold text-amber-300 transition flex items-center gap-2">
+          <i data-lucide="database" class="w-4 h-4 text-amber-400"></i> Importar de Pinata
+        </button>
+      </nav>
+    </div>
+
+    <div class="text-[10px] text-emerald-700 text-center pt-4">
+      ✦ Creado para la Red Mística ✦
+    </div>
   </aside>
 
-  <!-- Feed -->
-  <main class="max-w-6xl mx-auto px-4 py-8">
-    <h2 class="text-2xl font-black text-amber-400 mb-6">Audios Detectados:</h2>
-    <div id="feed" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <p id="loadingMsg" class="text-amber-800 animate-pulse col-span-full text-center py-20">Buscando audios compatibles en Hive...</p>
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="flex-1 p-6 max-w-4xl mx-auto w-full space-y-6">
+    <div class="flex justify-between items-end border-b border-emerald-900/30 pb-4">
+      <div>
+        <h2 id="currentCategory" class="text-xl font-bold text-amber-200 elven-font">Selecciona un Cantar</h2>
+        <p id="statusMsg" class="text-xs text-emerald-500">Haz clic en una opción del menú lateral para invocar las pistas...</p>
+      </div>
+      <button onclick="clearPlaylist()" class="text-xs text-amber-500/70 hover:text-amber-400 flex items-center gap-1">
+        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Limpiar
+      </button>
+    </div>
+
+    <!-- Lista de Reproducción -->
+    <div id="playlist" class="space-y-3">
+      <div class="text-center py-12 text-emerald-800">
+        <i data-lucide="feather" class="w-12 h-12 mx-auto mb-2 opacity-40"></i>
+        <p class="text-sm elven-font">El ecosistema está en silencio.</p>
+      </div>
     </div>
   </main>
 
-  <!-- Footer Player -->
-  <footer class="fixed bottom-0 left-0 right-0 bg-[#0a0e09]/95 border-t border-amber-900/50 p-4 backdrop-blur-md z-40">
-    <div class="max-w-4xl mx-auto flex flex-col gap-3">
-        <h4 id="playerTitle" class="text-xs font-bold text-amber-500 truncate text-center">Selecciona un audio</h4>
-        <div class="flex items-center justify-between gap-6">
-            <div class="flex items-center gap-3">
-                <button onclick="playRandom()" class="text-amber-700 hover:text-amber-400"><i data-lucide="shuffle" class="w-5 h-5"></i></button>
-                <button onclick="changeTrack(-1)" class="text-amber-500 hover:text-amber-300"><i data-lucide="skip-back" class="w-5 h-5"></i></button>
-                <button id="playPauseBtn" onclick="togglePlay()" class="bg-amber-600 text-black p-3 rounded-full hover:bg-amber-500"><i data-lucide="play" class="w-6 h-6"></i></button>
-                <button onclick="changeTrack(1)" class="text-amber-500 hover:text-amber-300"><i data-lucide="skip-forward" class="w-5 h-5"></i></button>
-            </div>
-            <input type="range" min="0" max="1" step="0.1" value="1" oninput="setVolume(this.value)" class="w-20">
-        </div>
+  <!-- REPRODUCTOR FIJO ÉLFICO -->
+  <footer class="fixed bottom-0 left-0 right-0 bg-slate-900/90 border-t border-emerald-900/50 p-4 backdrop-blur-lg z-50">
+    <div class="max-w-4xl mx-auto flex items-center justify-between">
+      <div class="w-1/2">
+        <div id="playerTitle" class="text-sm font-bold text-amber-200 elven-font truncate">Silencio en los Bosques</div>
+        <div id="playerAuthor" class="text-[10px] text-emerald-500">---</div>
+      </div>
+      
+      <div class="flex items-center gap-4">
+        <button onclick="skip(-1)" class="p-2 hover:bg-emerald-950/50 text-emerald-400 rounded-full transition">
+          <i data-lucide="skip-back" class="w-5 h-5"></i>
+        </button>
+        <button id="mainPlayBtn" onclick="togglePlay()" class="p-3 bg-gradient-to-tr from-emerald-600 to-amber-500 text-slate-950 font-bold rounded-full shadow-lg shadow-emerald-900/40 hover:scale-105 transition">
+          <i data-lucide="play" class="w-5 h-5"></i>
+        </button>
+        <button onclick="skip(1)" class="p-2 hover:bg-emerald-950/50 text-emerald-400 rounded-full transition">
+          <i data-lucide="skip-forward" class="w-5 h-5"></i>
+        </button>
+      </div>
     </div>
-    <audio id="globalAudio"></audio>
+    <audio id="audioEngine" class="hidden"></audio>
   </footer>
 
   <script>
-    lucide.createIcons();
-    let audioQueue = [];
-    let currentIdx = 0;
-    const player = document.getElementById('globalAudio');
-    const playerTitle = document.getElementById('playerTitle');
-    const playPauseBtn = document.getElementById('playPauseBtn');
+    let playlist = [];
+    let curIdx = 0;
+    const audio = document.getElementById('audioEngine');
+    const playBtn = document.getElementById('mainPlayBtn');
+    let hls = null;
 
-    const HIVE_NODES = [
-        'https://api.hive.blog',
-        'https://api.openhive.network',
-        'https://techcoderx.com',
-        'https://hive-api.arcange.eu'
-    ];
+    // CONSULTA A HIVE (Muestra las publicaciones con metadatos o audios adjuntos)
+    async function fetchHive(tag, name) {
+      document.getElementById('currentCategory').innerText = name;
+      document.getElementById('statusMsg').innerText = `Invocando ecos de #${tag}...`;
 
-    function toggleSidebar(open) {
-        document.getElementById('sidebar').classList.toggle('-translate-x-full', !open);
-        document.getElementById('sidebarBackdrop').classList.toggle('hidden', !open);
-    }
-
-    async function fetchFromHive(body) {
-        for (const node of HIVE_NODES) {
-            try {
-                const response = await fetch(node, {
-                    method: 'POST',
-                    body: JSON.stringify(body),
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                if (response.ok) {
-                    document.getElementById('nodeStatus').innerText = `Nodo: ${new URL(node).hostname}`;
-                    return await response.json();
-                }
-            } catch (e) {}
-        }
-        throw new Error("Sin respuesta de los nodos.");
-    }
-
-    // Comprobador estricto de URLs de audio válidas
-    function isValidAudioUrl(url) {
-        if (!url || typeof url !== 'string') return false;
-        // Ignorar reproductores e incrustaciones web
-        if (url.includes('youtube.com') || url.includes('youtu.be') || url.includes('3speak.tv/watch') || url.includes('soundcloud.com')) {
-            return false;
-        }
-        // Validar formato directo de archivo de sonido
-        return /\.(mp3|wav|ogg|m4a|aac)(\?.*)?$/i.test(url);
-    }
-
-    function findBestAudioUrl(post) {
-        // 1. Escanear enlaces directos en el cuerpo
-        const audioRegex = /(https?:\/\/[^\s"']+\.(mp3|wav|ogg|m4a|aac)(\?[^\s"']*)?)/gi;
-        const bodyMatches = post.body ? post.body.match(audioRegex) : null;
-        if (bodyMatches) {
-            const valid = bodyMatches.find(l => isValidAudioUrl(l));
-            if (valid) return valid;
-        }
-
-        // 2. Escanear metadatos
-        let meta = {};
-        try { meta = typeof post.json_metadata === 'string' ? JSON.parse(post.json_metadata || '{}') : post.json_metadata; } catch(e) {}
-        
-        if (isValidAudioUrl(meta?.audio)) return meta.audio;
-        if (isValidAudioUrl(meta?.music)) return meta.music;
-        if (Array.isArray(meta?.links)) {
-            const found = meta.links.find(l => isValidAudioUrl(l));
-            if (found) return found;
-        }
-        return null;
-    }
-
-    async function loadHivePosts() {
-        const loadingMsg = document.getElementById('loadingMsg');
-        loadingMsg.innerText = "Buscando archivos de audio válidos...";
-
-        try {
-            const tags = ["music", "audio", "podcast", "sound"];
-            const requests = tags.map(tag => fetchFromHive({
-                jsonrpc: "2.0",
-                method: "condenser_api.get_discussions_by_created",
-                params: [{ tag, limit: 25 }],
-                id: 1
-            }));
-
-            const results = await Promise.allSettled(requests);
-            const uniquePosts = new Map();
-
-            results.forEach(res => {
-                if (res.status === 'fulfilled' && res.value?.result) {
-                    res.value.result.forEach(p => uniquePosts.set(p.permlink, p));
-                }
-            });
-
-            audioQueue = Array.from(uniquePosts.values())
-                .map(p => ({ ...p, audioUrl: findBestAudioUrl(p) }))
-                .filter(p => !!p.audioUrl);
-
-            if (audioQueue.length === 0) {
-                loadingMsg.innerText = "No se encontraron archivos .mp3 / .wav directos en las publicaciones recientes.";
-            } else {
-                renderFeed(audioQueue);
-            }
-        } catch (e) {
-            loadingMsg.innerHTML = `<span class="text-red-500">Error de conexión con la red Hive.</span>`;
-        }
-    }
-
-    function renderFeed(posts) {
-        document.getElementById('feed').innerHTML = posts.map(p => `
-            <article class="card-elven border border-amber-900/30 rounded-xl p-3">
-                <h3 class="text-[9px] text-amber-600 font-bold uppercase truncate">@${p.author}</h3>
-                <h2 class="text-xs text-[#e5dcc3] mb-3 leading-tight h-8 overflow-hidden">${p.title}</h2>
-                <button onclick="playTrackFromQueue('${p.permlink}')" class="w-full py-2 bg-amber-900/20 border border-amber-800 rounded-lg text-amber-500 font-bold text-xs hover:bg-amber-800">
-                    REPRODUCIR
-                </button>
-            </article>
-        `).join('');
-    }
-
-    function playTrackFromQueue(permlink) {
-        const idx = audioQueue.findIndex(p => p.permlink === permlink);
-        if(idx !== -1) { currentIdx = idx; playTrack(); }
-    }
-
-    function playTrack() {
-        if (!audioQueue[currentIdx]) return;
-        const post = audioQueue[currentIdx];
-        
-        player.src = post.audioUrl;
-        playerTitle.innerText = `Cargando: ${post.title}`;
-
-        player.play().then(() => {
-            playerTitle.innerText = post.title;
-            playPauseBtn.innerHTML = '<i data-lucide="pause" class="w-6 h-6"></i>';
-            lucide.createIcons();
-        }).catch(e => {
-            console.warn("Reproducción requiere interacción directa:", e);
-            playerTitle.innerText = `${post.title} (Presiona Play)`;
-            playPauseBtn.innerHTML = '<i data-lucide="play" class="w-6 h-6"></i>';
-            lucide.createIcons();
+      try {
+        const response = await fetch('https://api.hive.blog', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            method: "condenser_api.get_discussions_by_created",
+            params: [{ tag: tag, limit: 30 }],
+            id: 1
+          })
         });
+
+        const { result } = await response.json();
+        const extracted = [];
+
+        result.forEach(post => {
+          try {
+            const meta = JSON.parse(post.json_metadata || "{}");
+            let mediaUrl = null;
+
+            // Detección de video/audio 3Speak
+            if (meta.video && meta.video.info) {
+              if (meta.video.info.ipfs) {
+                mediaUrl = `https://ipfs.io/ipfs/${meta.video.info.ipfs}`;
+              } else if (meta.video.info.file) {
+                const permlink = meta.video.info.file.replace('.m3u8', '');
+                mediaUrl = `https://encoder.3speak.tv/play?v=${post.author}/${permlink}`;
+              }
+            } 
+            
+            // Búsqueda de enlaces mp3/wav en el texto si no está en metadatos
+            if (!mediaUrl) {
+              const audioMatch = post.body.match(/https?:\/\/[^\s"']+\.(mp3|wav|ogg|m3u8)/i);
+              if (audioMatch) mediaUrl = audioMatch[0];
+            }
+
+            if (mediaUrl) {
+              extracted.push({
+                title: post.title,
+                author: "@" + post.author,
+                url: mediaUrl,
+                source: name
+              });
+            }
+          } catch (e) {}
+        });
+
+        if (extracted.length > 0) {
+          extracted.forEach(t => {
+            if (!playlist.some(p => p.url === t.url)) playlist.push(t);
+          });
+          renderList();
+          document.getElementById('statusMsg').innerText = `✦ Se han hallado ${extracted.length} pergaminos con sonido.`;
+        } else {
+          document.getElementById('statusMsg').innerText = "No se encontraron audios directos en las publicaciones recientes.";
+        }
+      } catch (e) {
+        document.getElementById('statusMsg').innerText = "Error al conectar con los reinos de Hive.";
+      }
     }
 
-    // Capturar el error "NotSupportedError" o enlace caído
-    player.onerror = () => {
-        const err = player.error;
-        console.error("Error en la fuente de audio:", err);
-        playerTitle.innerText = "⚠️ Enlace incompatible o caído. Saltando al siguiente...";
-        
-        // Auto-saltar al siguiente track tras 2 segundos si el link no sirve
-        setTimeout(() => {
-            if (audioQueue.length > 1) {
-                changeTrack(1);
-            }
-        }, 2000);
-    };
+    // PINATA (Soporte directo de JWT o API Key)
+    async function importPinataFiles() {
+      const jwt = prompt("Ingresa tu Pinata JWT Token:");
+      if (!jwt) return;
 
-    player.onended = () => changeTrack(1);
+      document.getElementById('statusMsg').innerText = "Abriendo cofre de Pinata...";
+
+      try {
+        const response = await fetch("https://api.pinata.cloud/data/pinList?status=pinned&pageLimit=100", {
+          method: "GET",
+          headers: { "Authorization": `Bearer ${jwt.trim().replace('Bearer ', '')}` }
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+
+        const pinataTracks = data.rows.map(item => ({
+          title: item.metadata?.name || item.ipfs_pin_hash,
+          author: "Tu Cofre IPFS",
+          url: `https://gateway.pinata.cloud/ipfs/${item.ipfs_pin_hash}`,
+          source: "Pinata"
+        }));
+
+        pinataTracks.forEach(t => {
+          if (!playlist.some(p => p.url === t.url)) playlist.push(t);
+        });
+
+        renderList();
+        document.getElementById('statusMsg').innerText = `✦ Se importaron ${pinataTracks.length} reliquias de Pinata.`;
+
+      } catch (e) {
+        alert("Error al acceder a Pinata. Revisa las llaves o permisos.");
+      }
+    }
+
+    function renderList() {
+      const container = document.getElementById('playlist');
+      if (playlist.length === 0) {
+        container.innerHTML = `<div class="text-center py-12 text-emerald-800"><p class="text-sm elven-font">Lista vacía.</p></div>`;
+        return;
+      }
+
+      container.innerHTML = playlist.map((t, i) => `
+        <div class="p-3.5 bg-slate-900/60 rounded-xl border border-emerald-900/30 hover:border-amber-500/40 transition flex justify-between items-center group backdrop-blur-sm">
+          <div class="truncate mr-4">
+            <h3 class="text-sm font-bold text-emerald-100 truncate group-hover:text-amber-200 transition">${t.title}</h3>
+            <p class="text-[10px] text-emerald-500">${t.source} • <span class="text-amber-400/80">${t.author}</span></p>
+          </div>
+          <button onclick="playTrack(${i})" class="text-xs bg-emerald-950 hover:bg-emerald-800 text-amber-300 px-3.5 py-1.5 rounded-lg border border-emerald-800 transition shrink-0 flex items-center gap-1.5 font-semibold">
+            <i data-lucide="play" class="w-3 h-3"></i> Entonar
+          </button>
+        </div>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    async function playTrack(i) {
+      curIdx = i;
+      const track = playlist[i];
+      document.getElementById('playerTitle').innerText = track.title;
+      document.getElementById('playerAuthor').innerText = `${track.source} • ${track.author}`;
+
+      audio.onerror = () => {
+        document.getElementById('playerTitle').innerText = "❌ Transmisión no disponible o bloqueada";
+        playBtn.innerHTML = '<i data-lucide="play" class="w-5 h-5"></i>';
+      };
+
+      if (Hls.isSupported() && track.url.includes('.m3u8')) {
+        if (hls) hls.destroy();
+        hls = new Hls();
+        hls.loadSource(track.url);
+        hls.attachMedia(audio);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => audio.play());
+      } else {
+        if (hls) hls.destroy();
+        audio.src = track.url;
+        await audio.play();
+      }
+
+      playBtn.innerHTML = '<i data-lucide="pause" class="w-5 h-5"></i>';
+      lucide.createIcons();
+    }
 
     function togglePlay() {
-        if(player.paused) { 
-            player.play(); 
-            playPauseBtn.innerHTML = '<i data-lucide="pause" class="w-6 h-6"></i>'; 
-        } else { 
-            player.pause(); 
-            playPauseBtn.innerHTML = '<i data-lucide="play" class="w-6 h-6"></i>'; 
-        }
-        lucide.createIcons();
+      if (audio.paused) { 
+        audio.play(); 
+        playBtn.innerHTML = '<i data-lucide="pause" class="w-5 h-5"></i>'; 
+      } else { 
+        audio.pause(); 
+        playBtn.innerHTML = '<i data-lucide="play" class="w-5 h-5"></i>'; 
+      }
+      lucide.createIcons();
     }
 
-    function changeTrack(step) {
-        if(audioQueue.length === 0) return;
-        currentIdx = (currentIdx + step + audioQueue.length) % audioQueue.length;
-        playTrack();
+    function skip(s) {
+      if (playlist.length === 0) return;
+      let next = (curIdx + s + playlist.length) % playlist.length;
+      playTrack(next);
     }
 
-    function playRandom() {
-        if(audioQueue.length === 0) return;
-        currentIdx = Math.floor(Math.random() * audioQueue.length);
-        playTrack();
+    function clearPlaylist() {
+      playlist = [];
+      renderList();
+      document.getElementById('statusMsg').innerText = "Lista despejada.";
     }
 
-    function setVolume(val) { player.volume = val; }
-
-    loadHivePosts();
+    lucide.createIcons();
   </script>
 </body>
 </html>
