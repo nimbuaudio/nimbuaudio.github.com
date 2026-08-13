@@ -3,39 +3,92 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nimbu - Debug Mode</title>
+  <title>Nimbu - Experiencia Auditiva</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
   <script>eruda.init();</script>
   
   <style>
-    body { font-family: 'Inter', sans-serif; padding-bottom: 140px; background-color: #0a0e09; }
-    .card-elven { background: linear-gradient(135deg, #1e261c 0%, #141912 100%); border: 1px solid #453010; }
+    body { font-family: 'Inter', sans-serif; padding-bottom: 140px; }
+    .elven-bg { background: radial-gradient(circle at 50% 10%, #1c251a 0%, #0a0e09 100%); }
+    .card-elven { background: linear-gradient(135deg, rgba(30, 38, 28, 0.9) 0%, rgba(20, 25, 18, 0.95) 100%); transition: transform 0.2s; }
+    .card-elven:hover { transform: translateY(-4px); }
+    input[type=range] { accent-color: #d97706; }
   </style>
 </head>
-<body class="text-[#e5dcc3]">
+<body class="bg-[#0a0e09] text-[#e5dcc3] min-h-screen elven-bg">
 
   <!-- Header -->
-  <header class="border-b border-amber-900/40 p-4 sticky top-0 bg-[#0a0e09]/90 z-40">
-    <h1 class="text-xl font-black text-amber-500">Nimbu <span class="text-[10px] text-amber-800">Debug V2</span></h1>
+  <header class="border-b border-amber-900/40 bg-[#0a0e09]/80 sticky top-0 z-40 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <button onclick="toggleSidebar(true)" class="p-2 rounded-lg border border-amber-800/40 hover:bg-amber-900/20 text-amber-600 transition">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+        <h1 class="text-xl font-black text-amber-500 tracking-wide">Nimbu</h1>
+      </div>
+      <div id="nodeStatus" class="text-[10px] text-amber-800 italic">Conectando...</div>
+    </div>
   </header>
 
-  <main class="max-w-4xl mx-auto p-4">
-    <div id="feed" class="grid grid-cols-1 gap-4">
-        <p id="loadingMsg" class="text-center text-amber-700 animate-pulse">Cargando y verificando streams...</p>
+  <!-- Sidebar completo -->
+  <div id="sidebarBackdrop" onclick="toggleSidebar(false)" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50"></div>
+  <aside id="sidebar" class="fixed top-0 left-0 bottom-0 w-72 bg-[#0f140d] border-r border-amber-900/50 z-50 transform -translate-x-full transition-transform duration-300 p-6 flex flex-col justify-between overflow-y-auto">
+    <nav class="space-y-8">
+        <div class="flex items-center gap-3 pb-6 border-b border-amber-900/30">
+            <i data-lucide="leaf" class="text-amber-600"></i>
+            <span class="text-lg font-bold text-amber-500">Nimbu</span>
+        </div>
+        <div>
+            <p class="text-[10px] uppercase tracking-widest text-amber-800 mb-3 px-3">Exploración</p>
+            <div class="space-y-1">
+                <a href="#" onclick="loadHivePosts()" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-amber-900/10 text-amber-500 border border-amber-800/30 text-sm">
+                    <i data-lucide="compass" class="w-4 h-4"></i> Explorar Crónicas
+                </a>
+                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-stone-400 hover:text-amber-200 text-sm">
+                    <i data-lucide="trending-up" class="w-4 h-4"></i> Ritmos en Auge
+                </a>
+            </div>
+        </div>
+        <div>
+            <p class="text-[10px] uppercase tracking-widest text-amber-800 mb-3 px-3">Legado Personal</p>
+            <div class="space-y-1">
+                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-stone-400 hover:text-amber-200 text-sm">
+                    <i data-lucide="user" class="w-4 h-4"></i> Mi Perfil
+                </a>
+                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-stone-400 hover:text-amber-200 text-sm">
+                    <i data-lucide="gem" class="w-4 h-4"></i> Billetera Hive
+                </a>
+            </div>
+        </div>
+    </nav>
+    <div class="text-[10px] text-stone-600 text-center italic border-t border-amber-900/30 pt-6">"El saber antiguo fluye eterno"</div>
+  </aside>
+
+  <!-- Feed -->
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <h2 class="text-2xl font-black text-amber-400 mb-6">Audios Detectados:</h2>
+    <div id="feed" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <p id="loadingMsg" class="text-amber-800 animate-pulse col-span-full text-center py-20">Buscando nodos disponibles...</p>
     </div>
   </main>
 
-  <footer class="fixed bottom-0 w-full bg-black border-t border-amber-900 p-4 z-50">
-    <div class="max-w-xl mx-auto flex items-center justify-between">
-        <div id="statusIndicator" class="text-[10px] text-red-500 font-mono">No playing</div>
-        <div class="flex gap-4">
-            <button onclick="togglePlay()" class="bg-amber-600 p-3 rounded-full"><i data-lucide="play-pause" class="w-6 h-6"></i></button>
-            <button onclick="changeTrack(1)" class="text-amber-500"><i data-lucide="skip-forward" class="w-6 h-6"></i></button>
+  <!-- Footer Player -->
+  <footer class="fixed bottom-0 left-0 right-0 bg-[#0a0e09]/95 border-t border-amber-900/50 p-4 backdrop-blur-md z-40">
+    <div class="max-w-4xl mx-auto flex flex-col gap-3">
+        <h4 id="playerTitle" class="text-xs font-bold text-amber-500 truncate text-center">Selecciona un audio</h4>
+        <div class="flex items-center justify-between gap-6">
+            <div class="flex items-center gap-3">
+                <button onclick="playRandom()" class="text-amber-700 hover:text-amber-400"><i data-lucide="shuffle" class="w-5 h-5"></i></button>
+                <button onclick="changeTrack(-1)" class="text-amber-500 hover:text-amber-300"><i data-lucide="skip-back" class="w-5 h-5"></i></button>
+                <button id="playPauseBtn" onclick="togglePlay()" class="bg-amber-600 text-black p-3 rounded-full hover:bg-amber-500"><i data-lucide="play" class="w-6 h-6"></i></button>
+                <button onclick="changeTrack(1)" class="text-amber-500 hover:text-amber-300"><i data-lucide="skip-forward" class="w-5 h-5"></i></button>
+            </div>
+            <input type="range" min="0" max="1" step="0.1" value="1" oninput="setVolume(this.value)" class="w-20">
         </div>
     </div>
-    <audio id="globalAudio"></audio>
+    <audio id="globalAudio" onended="changeTrack(1)"></audio>
   </footer>
 
   <script>
@@ -43,84 +96,154 @@
     let audioQueue = [];
     let currentIdx = 0;
     const player = document.getElementById('globalAudio');
-    const status = document.getElementById('statusIndicator');
+    const playerTitle = document.getElementById('playerTitle');
+    const playPauseBtn = document.getElementById('playPauseBtn');
 
-    // 1. Filtrado Estricto: Solo aceptamos archivos multimedia reales
+    // Nodos Hive alternativos para evitar "Failed to fetch"
+    const HIVE_NODES = [
+        'https://api.hive.blog',
+        'https://api.openhive.network',
+        'https://techcoderx.com',
+        'https://hive-api.arcange.eu'
+    ];
+
+    function toggleSidebar(open) {
+        document.getElementById('sidebar').classList.toggle('-translate-x-full', !open);
+        document.getElementById('sidebarBackdrop').classList.toggle('hidden', !open);
+    }
+
+    // Petición robusta que prueba nodos uno por uno si fallan
+    async function fetchFromHive(body) {
+        for (const node of HIVE_NODES) {
+            try {
+                const response = await fetch(node, {
+                    method: 'POST',
+                    body: JSON.stringify(body),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (response.ok) {
+                    document.getElementById('nodeStatus').innerText = `Nodo: ${new URL(node).hostname}`;
+                    return await response.json();
+                }
+            } catch (e) {
+                console.warn(`Falló el nodo ${node}, probando siguiente...`);
+            }
+        }
+        throw new Error("Ningún nodo de Hive respondió.");
+    }
+
+    // Extractor de audio flexible
     function findBestAudioUrl(post) {
-        const urlRegex = /(https?:\/\/[^\s"']+\.(mp3|wav|aac|ogg))/gi;
-        const bodyMatch = post.body.match(urlRegex);
+        const audioRegex = /(https?:\/\/[^\s"']+\.(mp3|wav|ogg|m4a|aac))/gi;
+        const bodyMatch = post.body ? post.body.match(audioRegex) : null;
         if (bodyMatch) return bodyMatch[0];
-        
+
         let meta = {};
-        try { meta = JSON.parse(post.json_metadata); } catch(e) {}
+        try { meta = typeof post.json_metadata === 'string' ? JSON.parse(post.json_metadata || '{}') : post.json_metadata; } catch(e) {}
         
-        if (meta?.audio && meta.audio.match(/\.(mp3|wav|aac|ogg)$/)) return meta.audio;
+        if (meta?.audio) return meta.audio;
+        if (meta?.music) return meta.music;
+        if (Array.isArray(meta?.links)) {
+            const found = meta.links.find(l => /\.(mp3|wav|ogg|m4a|aac)$/i.test(l));
+            if (found) return found;
+        }
         return null;
     }
 
     async function loadHivePosts() {
-        const tags = ["music", "audio"];
-        try {
-            const responses = await Promise.all(tags.map(tag => 
-                fetch('https://api.hive.blog', {
-                    method: 'POST',
-                    body: JSON.stringify({ jsonrpc: "2.0", method: "condenser_api.get_discussions_by_created", params: [{tag, limit: 10}], id: 1 }),
-                    headers: { 'Content-Type': 'application/json' }
-                }).then(r => r.json())
-            ));
+        const loadingMsg = document.getElementById('loadingMsg');
+        loadingMsg.innerText = "Consultando red Hive...";
 
-            audioQueue = responses.flatMap(r => r.result || [])
+        try {
+            const tags = ["music", "audio", "sound", "podcast"];
+            const requests = tags.map(tag => fetchFromHive({
+                jsonrpc: "2.0",
+                method: "condenser_api.get_discussions_by_created",
+                params: [{ tag, limit: 15 }],
+                id: 1
+            }));
+
+            const results = await Promise.allSettled(requests);
+            const uniquePosts = new Map();
+
+            results.forEach(res => {
+                if (res.status === 'fulfilled' && res.value?.result) {
+                    res.value.result.forEach(p => uniquePosts.set(p.permlink, p));
+                }
+            });
+
+            audioQueue = Array.from(uniquePosts.values())
                 .map(p => ({ ...p, audioUrl: findBestAudioUrl(p) }))
                 .filter(p => !!p.audioUrl);
 
-            if(audioQueue.length === 0) {
-                document.getElementById('loadingMsg').innerText = "No se hallaron archivos de audio válidos (mp3/wav).";
+            if (audioQueue.length === 0) {
+                loadingMsg.innerText = "No se encontraron audios directos (.mp3/.wav) en los posts recientes.";
             } else {
-                renderFeed();
+                renderFeed(audioQueue);
             }
-        } catch(e) { console.error(e); }
+        } catch (e) {
+            console.error("Error crítico de red:", e);
+            loadingMsg.innerHTML = `<span class="text-red-500">Error de conexión: Todos los nodos fallaron. Verifica tu conexión a internet.</span>`;
+        }
     }
 
-    function renderFeed() {
-        document.getElementById('feed').innerHTML = audioQueue.map(p => `
-            <div class="card-elven p-4 rounded-lg">
-                <h3 class="text-sm font-bold text-amber-500">${p.title}</h3>
-                <button onclick="playTrack('${p.permlink}')" class="mt-2 text-[10px] bg-amber-900/50 px-2 py-1 rounded">PROBAR AUDIO</button>
-            </div>
+    function renderFeed(posts) {
+        document.getElementById('feed').innerHTML = posts.map(p => `
+            <article class="card-elven border border-amber-900/30 rounded-xl p-3">
+                <h3 class="text-[9px] text-amber-600 font-bold uppercase truncate">@${p.author}</h3>
+                <h2 class="text-xs text-[#e5dcc3] mb-3 leading-tight h-8 overflow-hidden">${p.title}</h2>
+                <button onclick="playTrackFromQueue('${p.permlink}')" class="w-full py-2 bg-amber-900/20 border border-amber-800 rounded-lg text-amber-500 font-bold text-xs hover:bg-amber-800">
+                    REPRODUCIR
+                </button>
+            </article>
         `).join('');
     }
 
-    // 2. Player con diagnóstico de errores
-    function playTrack(permlink) {
-        const post = audioQueue.find(p => p.permlink === permlink);
-        if(!post) return;
-        
-        player.src = post.audioUrl;
-        status.innerText = "Cargando...";
-        
-        // Diagnóstico en consola
-        player.onerror = (e) => {
-            status.innerText = "Error: " + e.target.error.code;
-            console.error("Error cargando archivo:", post.audioUrl, e);
-        };
+    function playTrackFromQueue(permlink) {
+        const idx = audioQueue.findIndex(p => p.permlink === permlink);
+        if(idx !== -1) { currentIdx = idx; playTrack(); }
+    }
 
-        player.onplay = () => status.innerText = "Reproduciendo";
-        
-        player.play().catch(err => {
-            status.innerText = "Bloqueado (Toca el play)";
-            console.warn("Autoplay bloqueado, el usuario debe interactuar:", err);
+    function playTrack() {
+        if (!audioQueue[currentIdx]) return;
+        const post = audioQueue[currentIdx];
+        player.src = post.audioUrl;
+        playerTitle.innerText = post.title;
+
+        player.play().then(() => {
+            playPauseBtn.innerHTML = '<i data-lucide="pause" class="w-6 h-6"></i>';
+            lucide.createIcons();
+        }).catch(e => {
+            console.warn("Autoplay bloqueado:", e);
+            playPauseBtn.innerHTML = '<i data-lucide="play" class="w-6 h-6"></i>';
+            lucide.createIcons();
         });
     }
 
     function togglePlay() {
-        if(player.paused) player.play();
-        else player.pause();
+        if(player.paused) { 
+            player.play(); 
+            playPauseBtn.innerHTML = '<i data-lucide="pause" class="w-6 h-6"></i>'; 
+        } else { 
+            player.pause(); 
+            playPauseBtn.innerHTML = '<i data-lucide="play" class="w-6 h-6"></i>'; 
+        }
+        lucide.createIcons();
     }
 
     function changeTrack(step) {
+        if(audioQueue.length === 0) return;
         currentIdx = (currentIdx + step + audioQueue.length) % audioQueue.length;
-        playTrack(audioQueue[currentIdx].permlink);
+        playTrack();
     }
+
+    function playRandom() {
+        if(audioQueue.length === 0) return;
+        currentIdx = Math.floor(Math.random() * audioQueue.length);
+        playTrack();
+    }
+
+    function setVolume(val) { player.volume = val; }
 
     loadHivePosts();
   </script>
