@@ -3,59 +3,139 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AudioHive - Feed Blockchain</title>
+  <title>Nimbu - Audio Decentralized Feed</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* Efecto de brillo de fondo suave */
+    .glow-bg {
+      background: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, rgba(15, 23, 42, 0) 70%);
+    }
+    /* Animación sutil para las tarjetas al pasar el cursor */
+    .card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.2);
+    }
+  </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen">
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-indigo-500 selection:text-white relative overflow-x-hidden glow-bg">
 
-  <!-- Header -->
-  <header class="border-b border-slate-800 bg-slate-950/80 sticky top-0 z-40 backdrop-blur-sm">
-    <div class="max-w-6xl mx-auto px-3 py-3 flex justify-between items-center">
-      <h1 class="text-lg font-bold text-indigo-400">AudioHive</h1>
-      <div id="authContainer">
-        <button id="loginBtn" onclick="connectHiveKeychain()" class="bg-indigo-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-500 transition">Conectar Hive</button>
+  <!-- Header Estilizado -->
+  <header class="border-b border-slate-800/80 bg-slate-950/70 sticky top-0 z-40 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+      
+      <!-- Logotipo Nimbu -->
+      <div class="flex items-center gap-2">
+        <div class="bg-indigo-600/20 p-2 rounded-xl border border-indigo-500/30 text-indigo-400 shadow-lg shadow-indigo-500/10">
+          <i data-lucide="cloud-lightning" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-400 via-purple-300 to-rose-400 bg-clip-text text-transparent">Nimbu</h1>
+          <div class="flex items-center gap-1.5 text-[10px] text-slate-400">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Hive Audio Feed</span>
+          </div>
+        </div>
       </div>
+
+      <!-- Área de Login -->
+      <div id="authContainer">
+        <button id="loginBtn" onclick="connectHiveKeychain()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/25 transition-all flex items-center gap-1.5 active:scale-95">
+          <i data-lucide="wallet" class="w-3.5 h-3.5"></i>
+          Conectar Hive
+        </button>
+      </div>
+
     </div>
   </header>
 
   <!-- Main Content -->
-  <main class="max-w-6xl mx-auto px-2 py-4">
-    <div id="feed" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        <div class="col-span-full text-center py-10 text-slate-500">Cargando audios de Hive...</div>
+  <main class="max-w-6xl mx-auto px-3 py-6">
+    
+    <!-- Banner / Encabezado de la Sección -->
+    <div class="mb-6 flex justify-between items-end border-b border-slate-800/60 pb-3">
+      <div>
+        <h2 class="text-sm font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
+          <i data-lucide="radio" class="w-4 h-4 text-indigo-400"></i>
+          Explorar Audios
+        </h2>
+        <p class="text-xs text-slate-500">3Speak, Blocktunes, Liketu y contenido multimedia en Hive</p>
+      </div>
+      <button onclick="loadHivePosts()" class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800 hover:border-slate-700 transition">
+        <i data-lucide="rotate-cw" class="w-3 h-3"></i> Actualizar
+      </button>
+    </div>
+
+    <!-- Rejilla para el Feed -->
+    <div id="feed" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div class="col-span-full text-center py-16 text-slate-500 flex flex-col items-center gap-3">
+          <i data-lucide="loader-2" class="w-7 h-7 animate-spin text-indigo-500"></i>
+          <span class="text-xs font-medium">Sincronizando con la red Nimbu...</span>
+        </div>
     </div>
   </main>
 
-  <!-- Botón Flotante para Publicar -->
-  <button id="fabPublish" onclick="toggleModal(true)" class="hidden fixed bottom-6 right-6 bg-rose-600 p-4 rounded-full shadow-2xl z-40 hover:bg-rose-500 transition-all">
-    <i data-lucide="plus" class="w-6 h-6"></i>
+  <!-- Botón Flotante para Publicar con Efecto Glow -->
+  <button id="fabPublish" onclick="toggleModal(true)" class="hidden fixed bottom-6 right-6 bg-gradient-to-r from-indigo-600 to-rose-600 p-4 rounded-2xl shadow-xl shadow-indigo-500/20 z-40 hover:scale-105 transition-all active:scale-95 border border-white/10">
+    <i data-lucide="plus" class="w-6 h-6 text-white"></i>
   </button>
 
-  <!-- Modal de Publicación -->
-  <div id="publishModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl p-6 shadow-2xl">
-      <h2 class="text-xl font-bold mb-4">Publicar Audio</h2>
-      <input id="postTitle" type="text" class="w-full bg-slate-800 rounded-xl px-4 py-2 mb-3 text-sm border border-slate-700 outline-none focus:border-indigo-500" placeholder="Título">
-      <input id="postImage" type="url" class="w-full bg-slate-800 rounded-xl px-4 py-2 mb-3 text-sm border border-slate-700 outline-none focus:border-indigo-500" placeholder="URL Imagen (Opcional)">
-      <input id="postUrl" type="url" class="w-full bg-slate-800 rounded-xl px-4 py-2 mb-3 text-sm border border-slate-700 outline-none focus:border-indigo-500" placeholder="URL Audio MP3 / Link">
-      <textarea id="postBody" class="w-full bg-slate-800 rounded-xl px-4 py-2 h-20 text-sm mb-4 border border-slate-700 outline-none focus:border-indigo-500" placeholder="Descripción..."></textarea>
-      <div class="flex gap-3">
-        <button onclick="toggleModal(false)" class="flex-1 text-slate-400 text-sm hover:text-white">Cancelar</button>
-        <button onclick="publishContent()" class="flex-1 bg-indigo-600 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-500 transition">Publicar en Hive</button>
+  <!-- Modal de Publicación Estilizado -->
+  <div id="publishModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+      
+      <div class="absolute -top-10 -right-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl"></div>
+
+      <div class="flex justify-between items-center mb-5">
+        <h2 class="text-lg font-bold flex items-center gap-2">
+          <i data-lucide="music-2" class="w-5 h-5 text-indigo-400"></i>
+          Publicar en Nimbu
+        </h2>
+        <button onclick="toggleModal(false)" class="text-slate-500 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1 block">Título</label>
+          <input id="postTitle" type="text" class="w-full bg-slate-950/80 rounded-xl px-3.5 py-2.5 text-sm border border-slate-800 outline-none focus:border-indigo-500 transition" placeholder="Nombre de la pista o episodio">
+        </div>
+        
+        <div>
+          <label class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1 block">URL Audio / Enlace</label>
+          <input id="postUrl" type="url" class="w-full bg-slate-950/80 rounded-xl px-3.5 py-2.5 text-sm border border-slate-800 outline-none focus:border-indigo-500 transition" placeholder="https://3speak.tv/... o archivo .mp3">
+        </div>
+
+        <div>
+          <label class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1 block">Imagen de portada (Opcional)</label>
+          <input id="postImage" type="url" class="w-full bg-slate-950/80 rounded-xl px-3.5 py-2.5 text-sm border border-slate-800 outline-none focus:border-indigo-500 transition" placeholder="https://...">
+        </div>
+
+        <div>
+          <label class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1 block">Descripción</label>
+          <textarea id="postBody" class="w-full bg-slate-950/80 rounded-xl px-3.5 py-2.5 h-20 text-sm border border-slate-800 outline-none focus:border-indigo-500 transition resize-none" placeholder="Cuenta de qué trata este audio..."></textarea>
+        </div>
+      </div>
+
+      <div class="flex gap-3 mt-6">
+        <button onclick="toggleModal(false)" class="flex-1 py-2.5 text-slate-400 text-xs font-semibold hover:text-white transition">Cancelar</button>
+        <button onclick="publishContent()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/30 transition active:scale-95">Publicar en Hive</button>
       </div>
     </div>
   </div>
 
   <script>
     lucide.createIcons();
-    let currentUser = localStorage.getItem('audiohive_user');
+    let currentUser = localStorage.getItem('nimbu_user');
 
-    // 1. Mostrar caché si existe
-    const cachedPosts = localStorage.getItem('audiohive_cache');
+    // 1. Mostrar caché previo si existe
+    const cachedPosts = localStorage.getItem('nimbu_cache');
     if (cachedPosts) {
-        try {
-            renderPosts(JSON.parse(cachedPosts));
-        } catch(e) {}
+        try { renderPosts(JSON.parse(cachedPosts)); } catch(e) {}
     }
 
     if (currentUser) setSession(currentUser);
@@ -75,7 +155,6 @@
 
         let rawPosts = null;
 
-        // Búsqueda secuencial ultrarrápida
         for (const node of nodes) {
             try {
                 const response = await fetch(node, {
@@ -92,32 +171,30 @@
                 const data = await response.json();
                 if (data && data.result && Array.isArray(data.result) && data.result.length > 0) {
                     rawPosts = data.result;
-                    break; // Si un nodo responde correctamente, salimos del bucle
+                    break;
                 }
             } catch (e) {
-                console.warn(`Nodo ${node} no disponible, intentando siguiente...`);
+                console.warn(`Error en nodo ${node}`);
             }
         }
 
         if (rawPosts) {
-            // Filtrado de audios
             const audioPosts = rawPosts.filter(post => {
                 const bodyMatches = AUDIO_FILTER_REGEX.test(post.body || '');
                 const metaMatches = AUDIO_FILTER_REGEX.test(typeof post.json_metadata === 'string' ? post.json_metadata : JSON.stringify(post.json_metadata || {}));
                 return bodyMatches || metaMatches;
             });
 
-            // Mostrar filtrados o fallo seguro con las publicaciones recientes
             const displayPosts = audioPosts.length > 0 ? audioPosts : rawPosts.slice(0, 12);
 
-            localStorage.setItem('audiohive_cache', JSON.stringify(displayPosts));
+            localStorage.setItem('nimbu_cache', JSON.stringify(displayPosts));
             renderPosts(displayPosts);
         } else {
             if (!cachedPosts) {
                 feedElement.innerHTML = `
-                  <div class="col-span-full text-center py-6 text-red-400 text-xs">
-                    Error de conexión con la blockchain.<br>
-                    <button onclick="loadHivePosts()" class="mt-3 bg-slate-800 text-indigo-400 px-3 py-1 rounded-lg border border-slate-700 hover:bg-slate-700">Reintentar</button>
+                  <div class="col-span-full text-center py-10 text-rose-400/80 text-xs bg-rose-950/20 border border-rose-900/30 rounded-2xl">
+                    <p class="font-semibold mb-2">Error al conectar con los nodos de Hive</p>
+                    <button onclick="loadHivePosts()" class="bg-slate-900 text-indigo-400 px-3 py-1.5 rounded-xl border border-slate-800 hover:border-slate-700 transition text-[11px]">Reintentar conexión</button>
                   </div>
                 `;
             }
@@ -137,43 +214,49 @@
             } catch(e) {}
 
             let badge = "Audio";
+            let badgeBg = "bg-indigo-600/90";
             const fullContent = (post.body || '') + JSON.stringify(post.json_metadata || {});
-            if (fullContent.includes("3speak.tv")) badge = "3Speak";
-            else if (fullContent.includes("blocktunes.net")) badge = "Blocktunes";
-            else if (fullContent.includes("liketu.com")) badge = "Liketu";
+            
+            if (fullContent.includes("3speak.tv")) { badge = "3Speak"; badgeBg = "bg-rose-600/90"; }
+            else if (fullContent.includes("blocktunes.net")) { badge = "Blocktunes"; badgeBg = "bg-amber-600/90"; }
+            else if (fullContent.includes("liketu.com")) { badge = "Liketu"; badgeBg = "bg-pink-600/90"; }
 
             return `
-              <article class="bg-slate-900 border border-slate-800 rounded-xl p-2 hover:border-slate-600 transition flex flex-col justify-between relative">
+              <article class="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-2.5 card-hover flex flex-col justify-between relative backdrop-blur-sm">
                 <div>
-                  <div class="relative">
-                    <img src="${img}" class="rounded-lg mb-2 w-full h-24 object-cover bg-slate-800" onerror="this.src='https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400'">
-                    <span class="absolute top-1 right-1 bg-indigo-600/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm">${badge}</span>
+                  <div class="relative overflow-hidden rounded-xl mb-2.5">
+                    <img src="${img}" class="w-full h-28 object-cover bg-slate-950" onerror="this.src='https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400'">
+                    <span class="absolute top-1.5 right-1.5 ${badgeBg} text-white text-[9px] font-extrabold px-2 py-0.5 rounded-lg backdrop-blur-md shadow-md uppercase tracking-wider">${badge}</span>
                   </div>
-                  <h3 class="font-bold text-[10px] text-indigo-400 uppercase tracking-wider truncate">@${post.author}</h3>
-                  <h2 class="font-bold text-xs mb-2 leading-tight line-clamp-2">${post.title}</h2>
+                  <h3 class="font-bold text-[10px] text-indigo-400 uppercase tracking-wider truncate mb-0.5">@${post.author}</h3>
+                  <h2 class="font-semibold text-xs mb-3 leading-snug line-clamp-2 text-slate-200">${post.title}</h2>
                 </div>
-                <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-1">
-                   <button onclick="voteAudio(this)" class="text-[10px] text-slate-400 hover:text-rose-500 flex items-center gap-1">❤️ ${post.active_votes ? post.active_votes.length : 0}</button>
-                   <a href="https://hive.blog/@${post.author}/${post.permlink}" target="_blank" class="text-[10px] text-indigo-400 hover:underline">Escuchar</a>
+                <div class="flex justify-between items-center border-t border-slate-800/60 pt-2 mt-auto">
+                   <button onclick="voteAudio(this)" class="text-[11px] text-slate-400 hover:text-rose-500 flex items-center gap-1 transition">❤️ ${post.active_votes ? post.active_votes.length : 0}</button>
+                   <a href="https://hive.blog/@${post.author}/${post.permlink}" target="_blank" class="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 bg-indigo-950/40 px-2 py-1 rounded-lg border border-indigo-800/30">
+                     <span>Escuchar</span>
+                     <i data-lucide="external-link" class="w-3 h-3"></i>
+                   </a>
                 </div>
               </article>
             `;
         }).join('');
+        lucide.createIcons();
     }
 
     function setSession(user) {
       currentUser = user;
       document.getElementById('authContainer').innerHTML = `
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 bg-slate-900 border border-slate-800/80 px-3 py-1.5 rounded-xl">
             <span class="text-indigo-400 font-bold text-xs">@${user}</span>
-            <button onclick="logout()" class="text-[10px] text-slate-500 hover:text-white underline">Salir</button>
+            <button onclick="logout()" class="text-[10px] text-slate-500 hover:text-slate-300 underline">Salir</button>
         </div>
       `;
       document.getElementById('fabPublish').classList.remove('hidden');
     }
 
     function logout() {
-      localStorage.removeItem('audiohive_user');
+      localStorage.removeItem('nimbu_user');
       window.location.reload();
     }
 
@@ -181,7 +264,7 @@
       const u = prompt('Introduce tu usuario de Hive (sin @):');
       if (u) { 
         const cleanUser = u.toLowerCase().trim();
-        localStorage.setItem('audiohive_user', cleanUser);
+        localStorage.setItem('nimbu_user', cleanUser);
         setSession(cleanUser);
       }
     }
@@ -200,12 +283,12 @@
 
       const slug = title.toLowerCase().replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
       const permlink = `${slug}-${Date.now()}`;
-      const parentPermlink = "audiohive";
+      const parentPermlink = "nimbu";
       const postBody = `${imageUrl ? `![Imagen](${imageUrl})\n\n` : ''}🎧 **Escucha el audio aquí:** ${audioUrl}\n\n${body}`;
       
       const jsonMetadata = JSON.stringify({ 
-        tags: ["audiohive", "music", "audio"], 
-        app: "audiohive/0.1.0" 
+        tags: ["nimbu", "music", "audio"], 
+        app: "nimbu/0.1.0" 
       });
 
       if (window.hive_keychain) {
