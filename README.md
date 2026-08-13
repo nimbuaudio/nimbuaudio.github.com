@@ -1,1 +1,261 @@
-# nimbuaudio.github.com
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AudioHive - Feed Blockchain</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-950/80 sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-3 py-3 flex justify-between items-center">
+      <h1 class="text-lg font-bold text-indigo-400">AudioHive</h1>
+      <div id="authContainer">
+        <button id="loginBtn" onclick="connectHiveKeychain()" class="bg-indigo-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-500 transition">Conectar Hive</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-6xl mx-auto px-2 py-4">
+    <!-- Rejilla para el Collage -->
+    <div id="feed" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div class="col-span-full text-center py-10 text-slate-500">Buscando audios en Hive...</div>
+    </div>
+  </main>
+
+  <!-- Botón Flotante para Publicar -->
+  <button id="fabPublish" onclick="toggleModal(true)" class="hidden fixed bottom-6 right-6 bg-rose-600 p-4 rounded-full shadow-2xl z-40 hover:bg-rose-500 transition-all">
+    <i data-lucide="plus" class="w-6 h-6"></i>
+  </button>
+
+  <!-- Modal de Publicación -->
+  <div id="publishModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl p-6 shadow-2xl">
+      <h2 class="text-xl font-bold mb-4">Publicar Audio</h2>
+      <input id="postTitle" type="text" class="w-full bg-slate-800 rounded-xl px-4 py-2 mb-3 text-sm border border-slate-700 outline-none focus:border-indigo-500" placeholder="Título">
+      <input id="postImage" type="url" class="w-full bg-slate-800 rounded-xl px-4 py-2 mb-3 text-sm border border-slate-700 outline-none focus:border-indigo-500" placeholder="URL Imagen (Opcional)">
+      <input id="postUrl" type="url" class="w-full bg-slate-800 rounded-xl px-4 py-2 mb-3 text-sm border border-slate-700 outline-none focus:border-indigo-500" placeholder="URL Audio MP3">
+      <textarea id="postBody" class="w-full bg-slate-800 rounded-xl px-4 py-2 h-20 text-sm mb-4 border border-slate-700 outline-none focus:border-indigo-500" placeholder="Descripción..."></textarea>
+      <div class="flex gap-3">
+        <button onclick="toggleModal(false)" class="flex-1 text-slate-400 text-sm hover:text-white">Cancelar</button>
+        <button onclick="publishContent()" class="flex-1 bg-indigo-600 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-500 transition">Publicar en Hive</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+    let currentUser = localStorage.getItem('audiohive_user');
+
+    if (currentUser) setSession(currentUser);
+    loadHivePosts();
+
+    // Filtro para plataformas e imágenes/archivos de audio
+    const AUDIO_FILTER_REGEX = /(3speak\.tv|blocktunes\.net|liketu\.com|\.(mp3|wav|ogg|m4a|flac))/i;
+
+    async function loadHivePosts() {
+        const feedElement = document.getElementById('feed');
+        feedElement.innerHTML = `<div class="col-span-full text-center py-10 text-slate-500">Cargando audios de Hive...</div>`;
+
+        // Nodos con alta compatibilidad para CORS e IFrames
+        const nodes = [
+            'https://hive-api.arcange.eu',
+            'https://api.deathwing.me',
+            'https://api.hive.blog',
+            'https://api.openhive.network'
+        ];
+
+        let rawPosts = [];
+
+        for (const node of nodes) {
+            try {
+                // Intentamos primero vía la API Bridge (más rápida y estructurada)
+                const response = await fetch(node, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        method: 'bridge.get_ranked_posts',
+                        params: { sort: 'created', tag: 'music', limit: 40 },
+                        id: 1
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data && data.result && data.result.length > 0) {
+                    rawPosts = data.result;
+                    break;
+                } else {
+                    // Respaldo con condenser_api
+                    const fallbackResp = await fetch(node, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            jsonrpc: '2.0',
+                            method: 'condenser_api.get_discussions_by_created',
+                            params: [{ tag: 'music', limit: 40 }],
+                            id: 1
+                        })
+                    });
+                    const fallbackData = await fallbackResp.json();
+                    if (fallbackData && fallbackData.result) {
+                        rawPosts = fallbackData.result;
+                        break;
+                    }
+                }
+            } catch (e) {
+                console.warn(`Error de red en nodo ${node}, probando siguiente...`);
+            }
+        }
+
+        if (rawPosts.length > 0) {
+            // Filtrar solo publicaciones con reproductores de audio o enlaces compatibles
+            const audioPosts = rawPosts.filter(post => {
+                const bodyMatches = AUDIO_FILTER_REGEX.test(post.body || '');
+                const metaMatches = AUDIO_FILTER_REGEX.test(JSON.stringify(post.json_metadata || {}));
+                return bodyMatches || metaMatches;
+            });
+
+            if (audioPosts.length > 0) {
+                renderPosts(audioPosts);
+            } else {
+                // Si ninguna de las 40 publicaciones recientes de #music tenía audio directo,
+                // mostramos el feed completo para que la interfaz no quede vacía
+                renderPosts(rawPosts.slice(0, 12));
+            }
+        } else {
+            feedElement.innerHTML = `
+              <div class="col-span-full text-center py-6 text-red-400 text-xs">
+                Bloqueo de red o CORS en el visor.<br>
+                <span class="text-slate-500 block text-[10px] my-1">Si estás en CodePen móvil, despliega en Vercel, GitHub Pages o Netlify.</span>
+                <button onclick="loadHivePosts()" class="mt-2 bg-slate-800 text-indigo-400 px-3 py-1 rounded-lg border border-slate-700 hover:bg-slate-700">Reintentar</button>
+              </div>
+            `;
+        }
+    }
+
+    function renderPosts(posts) {
+        const feedElement = document.getElementById('feed');
+        feedElement.innerHTML = posts.map(post => {
+            let img = 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400';
+            
+            // Intentar extraer imagen de metadatos
+            try {
+                const meta = typeof post.json_metadata === 'string' ? JSON.parse(post.json_metadata) : post.json_metadata;
+                if (meta && meta.image && meta.image[0]) img = meta.image[0];
+            } catch(e) {}
+
+            // Detectar origen del audio
+            let badge = "Audio";
+            const fullContent = (post.body || '') + JSON.stringify(post.json_metadata || {});
+            if (fullContent.includes("3speak.tv")) badge = "3Speak";
+            else if (fullContent.includes("blocktunes.net")) badge = "Blocktunes";
+            else if (fullContent.includes("liketu.com")) badge = "Liketu";
+
+            return `
+              <article class="bg-slate-900 border border-slate-800 rounded-xl p-2 hover:border-slate-600 transition flex flex-col justify-between relative">
+                <div>
+                  <div class="relative">
+                    <img src="${img}" class="rounded-lg mb-2 w-full h-24 object-cover bg-slate-800" onerror="this.src='https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400'">
+                    <span class="absolute top-1 right-1 bg-indigo-600/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm">${badge}</span>
+                  </div>
+                  <h3 class="font-bold text-[10px] text-indigo-400 uppercase tracking-wider truncate">@${post.author}</h3>
+                  <h2 class="font-bold text-xs mb-2 leading-tight line-clamp-2">${post.title}</h2>
+                </div>
+                <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-1">
+                   <button onclick="voteAudio(this)" class="text-[10px] text-slate-400 hover:text-rose-500 flex items-center gap-1">❤️ ${post.stats ? post.stats.total_votes : (post.active_votes ? post.active_votes.length : 0)}</button>
+                   <a href="https://hive.blog/@${post.author}/${post.permlink}" target="_blank" class="text-[10px] text-indigo-400 hover:underline">Escuchar</a>
+                </div>
+              </article>
+            `;
+        }).join('');
+    }
+
+    // --- SESIÓN Y USUARIO ---
+    function setSession(user) {
+      currentUser = user;
+      document.getElementById('authContainer').innerHTML = `
+        <div class="flex items-center gap-2">
+            <span class="text-indigo-400 font-bold text-xs">@${user}</span>
+            <button onclick="logout()" class="text-[10px] text-slate-500 hover:text-white underline">Salir</button>
+        </div>
+      `;
+      document.getElementById('fabPublish').classList.remove('hidden');
+    }
+
+    function logout() {
+      localStorage.removeItem('audiohive_user');
+      window.location.reload();
+    }
+
+    async function connectHiveKeychain() {
+      const u = prompt('Introduce tu usuario de Hive (sin @):');
+      if (u) { 
+        const cleanUser = u.toLowerCase().trim();
+        localStorage.setItem('audiohive_user', cleanUser);
+        setSession(cleanUser);
+      }
+    }
+
+    function toggleModal(show) { document.getElementById('publishModal').classList.toggle('hidden', !show); }
+
+    // --- PUBLICACIÓN ---
+    function publishContent() {
+      if (!currentUser) return alert("Primero debes conectar tu usuario");
+      
+      const title = document.getElementById('postTitle').value;
+      const body = document.getElementById('postBody').value;
+      const audioUrl = document.getElementById('postUrl').value;
+      const imageUrl = document.getElementById('postImage').value;
+
+      if (!title || !audioUrl) return alert("El título y la URL del audio son obligatorios");
+
+      const slug = title.toLowerCase().replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
+      const permlink = `${slug}-${Date.now()}`;
+      const parentPermlink = "audiohive";
+      const postBody = `${imageUrl ? `![Imagen](${imageUrl})\n\n` : ''}🎧 **Escucha el audio aquí:** ${audioUrl}\n\n${body}`;
+      
+      const jsonMetadata = JSON.stringify({ 
+        tags: ["audiohive", "music", "audio"], 
+        app: "audiohive/0.1.0" 
+      });
+
+      if (window.hive_keychain) {
+        window.hive_keychain.requestPost(currentUser, permlink, parentPermlink, title, postBody, "", jsonMetadata, (res) => {
+          if (res.success) { 
+            alert("¡Publicación enviada exitosamente a Hive!"); 
+            toggleModal(false); 
+            loadHivePosts();
+          } else { 
+            alert("Error al publicar: " + res.message); 
+          }
+        });
+      } else {
+        const op = ["comment", {
+            "parent_author": "",
+            "parent_permlink": parentPermlink,
+            "author": currentUser,
+            "permlink": permlink,
+            "title": title,
+            "body": postBody,
+            "json_metadata": jsonMetadata
+        }];
+        
+        const url = `hive://sign-tx?tx=${encodeURIComponent(JSON.stringify(op))}`;
+        alert("Abriendo la app Keychain para completar la firma...");
+        window.location.href = url;
+      }
+    }
+
+    function voteAudio(btn) {
+      if (!currentUser) return alert("Conecta tu cuenta para interactuar");
+      btn.classList.toggle('text-rose-500');
+    }
+  </script>
+</body>
+</html>
