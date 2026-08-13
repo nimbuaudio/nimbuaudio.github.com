@@ -70,7 +70,7 @@
   <main class="max-w-6xl mx-auto px-4 py-8">
     <h2 class="text-2xl font-black text-amber-400 mb-6">Audios Detectados:</h2>
     <div id="feed" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <p id="loadingMsg" class="text-amber-800 animate-pulse col-span-full text-center py-20">Buscando nodos disponibles...</p>
+        <p id="loadingMsg" class="text-amber-800 animate-pulse col-span-full text-center py-20">Buscando audios compatibles en Hive...</p>
     </div>
   </main>
 
@@ -88,7 +88,7 @@
             <input type="range" min="0" max="1" step="0.1" value="1" oninput="setVolume(this.value)" class="w-20">
         </div>
     </div>
-    <audio id="globalAudio" onended="changeTrack(1)"></audio>
+    <audio id="globalAudio"></audio>
   </footer>
 
   <script>
@@ -99,7 +99,6 @@
     const playerTitle = document.getElementById('playerTitle');
     const playPauseBtn = document.getElementById('playPauseBtn');
 
-    // Nodos Hive alternativos para evitar "Failed to fetch"
     const HIVE_NODES = [
         'https://api.hive.blog',
         'https://api.openhive.network',
@@ -112,7 +111,6 @@
         document.getElementById('sidebarBackdrop').classList.toggle('hidden', !open);
     }
 
-    // Petición robusta que prueba nodos uno por uno si fallan
     async function fetchFromHive(body) {
         for (const node of HIVE_NODES) {
             try {
@@ -125,26 +123,39 @@
                     document.getElementById('nodeStatus').innerText = `Nodo: ${new URL(node).hostname}`;
                     return await response.json();
                 }
-            } catch (e) {
-                console.warn(`Falló el nodo ${node}, probando siguiente...`);
-            }
+            } catch (e) {}
         }
-        throw new Error("Ningún nodo de Hive respondió.");
+        throw new Error("Sin respuesta de los nodos.");
     }
 
-    // Extractor de audio flexible
-    function findBestAudioUrl(post) {
-        const audioRegex = /(https?:\/\/[^\s"']+\.(mp3|wav|ogg|m4a|aac))/gi;
-        const bodyMatch = post.body ? post.body.match(audioRegex) : null;
-        if (bodyMatch) return bodyMatch[0];
+    // Comprobador estricto de URLs de audio válidas
+    function isValidAudioUrl(url) {
+        if (!url || typeof url !== 'string') return false;
+        // Ignorar reproductores e incrustaciones web
+        if (url.includes('youtube.com') || url.includes('youtu.be') || url.includes('3speak.tv/watch') || url.includes('soundcloud.com')) {
+            return false;
+        }
+        // Validar formato directo de archivo de sonido
+        return /\.(mp3|wav|ogg|m4a|aac)(\?.*)?$/i.test(url);
+    }
 
+    function findBestAudioUrl(post) {
+        // 1. Escanear enlaces directos en el cuerpo
+        const audioRegex = /(https?:\/\/[^\s"']+\.(mp3|wav|ogg|m4a|aac)(\?[^\s"']*)?)/gi;
+        const bodyMatches = post.body ? post.body.match(audioRegex) : null;
+        if (bodyMatches) {
+            const valid = bodyMatches.find(l => isValidAudioUrl(l));
+            if (valid) return valid;
+        }
+
+        // 2. Escanear metadatos
         let meta = {};
         try { meta = typeof post.json_metadata === 'string' ? JSON.parse(post.json_metadata || '{}') : post.json_metadata; } catch(e) {}
         
-        if (meta?.audio) return meta.audio;
-        if (meta?.music) return meta.music;
+        if (isValidAudioUrl(meta?.audio)) return meta.audio;
+        if (isValidAudioUrl(meta?.music)) return meta.music;
         if (Array.isArray(meta?.links)) {
-            const found = meta.links.find(l => /\.(mp3|wav|ogg|m4a|aac)$/i.test(l));
+            const found = meta.links.find(l => isValidAudioUrl(l));
             if (found) return found;
         }
         return null;
@@ -152,14 +163,14 @@
 
     async function loadHivePosts() {
         const loadingMsg = document.getElementById('loadingMsg');
-        loadingMsg.innerText = "Consultando red Hive...";
+        loadingMsg.innerText = "Buscando archivos de audio válidos...";
 
         try {
-            const tags = ["music", "audio", "sound", "podcast"];
+            const tags = ["music", "audio", "podcast", "sound"];
             const requests = tags.map(tag => fetchFromHive({
                 jsonrpc: "2.0",
                 method: "condenser_api.get_discussions_by_created",
-                params: [{ tag, limit: 15 }],
+                params: [{ tag, limit: 25 }],
                 id: 1
             }));
 
@@ -177,13 +188,12 @@
                 .filter(p => !!p.audioUrl);
 
             if (audioQueue.length === 0) {
-                loadingMsg.innerText = "No se encontraron audios directos (.mp3/.wav) en los posts recientes.";
+                loadingMsg.innerText = "No se encontraron archivos .mp3 / .wav directos en las publicaciones recientes.";
             } else {
                 renderFeed(audioQueue);
             }
         } catch (e) {
-            console.error("Error crítico de red:", e);
-            loadingMsg.innerHTML = `<span class="text-red-500">Error de conexión: Todos los nodos fallaron. Verifica tu conexión a internet.</span>`;
+            loadingMsg.innerHTML = `<span class="text-red-500">Error de conexión con la red Hive.</span>`;
         }
     }
 
@@ -207,18 +217,37 @@
     function playTrack() {
         if (!audioQueue[currentIdx]) return;
         const post = audioQueue[currentIdx];
+        
         player.src = post.audioUrl;
-        playerTitle.innerText = post.title;
+        playerTitle.innerText = `Cargando: ${post.title}`;
 
         player.play().then(() => {
+            playerTitle.innerText = post.title;
             playPauseBtn.innerHTML = '<i data-lucide="pause" class="w-6 h-6"></i>';
             lucide.createIcons();
         }).catch(e => {
-            console.warn("Autoplay bloqueado:", e);
+            console.warn("Reproducción requiere interacción directa:", e);
+            playerTitle.innerText = `${post.title} (Presiona Play)`;
             playPauseBtn.innerHTML = '<i data-lucide="play" class="w-6 h-6"></i>';
             lucide.createIcons();
         });
     }
+
+    // Capturar el error "NotSupportedError" o enlace caído
+    player.onerror = () => {
+        const err = player.error;
+        console.error("Error en la fuente de audio:", err);
+        playerTitle.innerText = "⚠️ Enlace incompatible o caído. Saltando al siguiente...";
+        
+        // Auto-saltar al siguiente track tras 2 segundos si el link no sirve
+        setTimeout(() => {
+            if (audioQueue.length > 1) {
+                changeTrack(1);
+            }
+        }, 2000);
+    };
+
+    player.onended = () => changeTrack(1);
 
     function togglePlay() {
         if(player.paused) { 
