@@ -23,27 +23,45 @@
   <header class="border-b border-amber-900/40 bg-[#0a0e09]/80 sticky top-0 z-40 backdrop-blur-md">
     <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
       <div class="flex items-center gap-3">
+        <button onclick="toggleSidebar(true)" class="p-2 rounded-lg border border-amber-800/40 hover:bg-amber-900/20 text-amber-600 transition">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
         <h1 class="text-xl font-black text-amber-500 tracking-wide">Nimbu</h1>
       </div>
-      <div id="status" class="text-[10px] text-amber-700 italic">Depurador activo: Consola (F12)</div>
+      <div id="status" class="text-[10px] text-amber-700 italic">Depurador activo: F12</div>
     </div>
   </header>
+
+  <!-- Sidebar -->
+  <div id="sidebarBackdrop" onclick="toggleSidebar(false)" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50"></div>
+  <aside id="sidebar" class="fixed top-0 left-0 bottom-0 w-72 bg-[#0f140d] border-r border-amber-900/50 z-50 transform -translate-x-full transition-transform duration-300 p-6 flex flex-col justify-between overflow-y-auto">
+    <nav class="space-y-6">
+        <div class="flex items-center gap-3 mb-8 text-amber-500 font-black text-xl">
+            <i data-lucide="leaf"></i> Nimbu
+        </div>
+        <div>
+            <p class="text-[10px] uppercase tracking-widest text-amber-800 mb-3 px-3">Exploración</p>
+            <div class="space-y-1">
+                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-amber-900/20 text-amber-500 text-sm"><i data-lucide="compass" class="w-4 h-4"></i> Explorar Crónicas</a>
+                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-stone-400 hover:text-amber-200 text-sm"><i data-lucide="trending-up" class="w-4 h-4"></i> Ritmos en Auge</a>
+            </div>
+        </div>
+    </nav>
+    <div class="text-[10px] text-stone-600 text-center italic border-t border-amber-900/30 pt-6">"El saber antiguo fluye eterno"</div>
+  </aside>
 
   <!-- Feed -->
   <main class="max-w-6xl mx-auto px-4 py-8">
     <h2 class="text-2xl font-black text-amber-400 mb-6">Audios Detectados:</h2>
     <div id="feed" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <p class="text-amber-800">Cargando crónicas musicales...</p>
+        <p class="text-amber-800 animate-pulse">Cargando crónicas musicales...</p>
     </div>
   </main>
 
   <!-- Footer Player -->
-  <footer class="fixed bottom-0 left-0 right-0 bg-[#0a0e09]/95 border-t border-amber-900/50 p-4 backdrop-blur-md z-50">
+  <footer class="fixed bottom-0 left-0 right-0 bg-[#0a0e09]/95 border-t border-amber-900/50 p-4 backdrop-blur-md z-40">
     <div class="max-w-4xl mx-auto flex flex-col gap-3">
-        <!-- Info -->
         <h4 id="playerTitle" class="text-xs font-bold text-amber-500 truncate text-center">Selecciona un audio</h4>
-        
-        <!-- Controles -->
         <div class="flex items-center justify-between gap-6">
             <div class="flex items-center gap-3">
                 <button onclick="playRandom()" class="text-amber-700 hover:text-amber-400"><i data-lucide="shuffle" class="w-5 h-5"></i></button>
@@ -68,33 +86,34 @@
     const playerTitle = document.getElementById('playerTitle');
     const playPauseBtn = document.getElementById('playPauseBtn');
 
-    // 1. EL CAZADOR DE AUDIOS (Motor de búsqueda)
+    // Función del Menú
+    function toggleSidebar(open) {
+        document.getElementById('sidebar').classList.toggle('-translate-x-full', !open);
+        document.getElementById('sidebarBackdrop').classList.toggle('hidden', !open);
+    }
+
+    // 1. EL CAZADOR DE AUDIOS
     function findBestAudioUrl(post) {
-        console.log(`[DEBUG] Analizando post: ${post.title}`);
-        
-        // A. Intentar con metadatos (JSON)
         let meta = {};
         try {
             meta = typeof post.json_metadata === 'string' ? JSON.parse(post.json_metadata || '{}') : post.json_metadata;
-        } catch(e) { console.warn("[DEBUG] Error parseando meta:", e); }
+        } catch(e) {}
 
-        if (meta?.audio) { console.log("[DEBUG] Encontrado en metadata.audio"); return meta.audio; }
-        if (meta?.music) { console.log("[DEBUG] Encontrado en metadata.music"); return meta.music; }
+        if (meta?.audio) return meta.audio;
+        if (meta?.music) return meta.music;
         if (Array.isArray(meta?.links)) {
             const found = meta.links.find(l => /\.(mp3|wav|ogg|m4a|aac)$/i.test(l));
-            if (found) { console.log("[DEBUG] Encontrado en metadata.links"); return found; }
+            if (found) return found;
         }
 
-        // B. Intentar con el cuerpo del texto (Regex)
         const audioRegex = /(https?:\/\/[^\s"']+\.(mp3|wav|ogg|m4a|aac))/gi;
         const match = post.body.match(audioRegex);
-        if (match) { console.log("[DEBUG] Encontrado en cuerpo del texto:", match[0]); return match[0]; }
+        if (match) return match[0];
 
-        console.log("[DEBUG] Ningún audio válido detectado.");
         return null;
     }
 
-    // 2. LÓGICA DE CARGA
+    // 2. CARGA DE POSTS
     async function loadHivePosts() {
         try {
             const hiveClient = new dhive.Client(['https://api.hive.blog'], { timeout: 5000 });
@@ -103,9 +122,8 @@
             audioQueue = posts.map(p => ({ ...p, audioUrl: findBestAudioUrl(p) }))
                               .filter(p => !!p.audioUrl);
 
-            console.log(`[DEBUG] Total audios listos para reproducir: ${audioQueue.length}`);
             renderFeed(audioQueue);
-        } catch (e) { console.error("[DEBUG] Error de red:", e); }
+        } catch (e) { console.error("Error de red:", e); }
     }
 
     function renderFeed(posts) {
@@ -121,7 +139,7 @@
         `).join('');
     }
 
-    // 3. CONTROL DEL REPRODUCTOR
+    // 3. CONTROLES
     function playTrackFromQueue(permlink) {
         const idx = audioQueue.findIndex(p => p.permlink === permlink);
         if(idx !== -1) { currentIdx = idx; playTrack(); }
@@ -129,14 +147,9 @@
 
     function playTrack() {
         const post = audioQueue[currentIdx];
-        console.log(`[DEBUG] Intentando cargar: ${post.audioUrl}`);
-        
         player.src = post.audioUrl;
         playerTitle.innerText = post.title;
-        player.play().catch(e => {
-            console.error("[DEBUG] El navegador bloqueó o falló la reproducción:", e);
-            alert("No se pudo reproducir este archivo. Verifica la consola (F12) para detalles de red.");
-        });
+        player.play().catch(e => console.error("Reproducción bloqueada:", e));
         playPauseBtn.innerHTML = '<i data-lucide="pause" class="w-6 h-6"></i>';
         lucide.createIcons();
     }
@@ -160,8 +173,6 @@
 
     function setVolume(val) { player.volume = val; }
 
-    // Inicializar
-    player.onerror = () => console.error("[DEBUG] El elemento <audio> reportó un error de carga.");
     loadHivePosts();
   </script>
 </body>
